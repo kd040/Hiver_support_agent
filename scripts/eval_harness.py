@@ -3,7 +3,12 @@
 Three components rolled up over the 200-row golden set:
   A  intent classification accuracy      (per-intent primary, blended secondary)
   B  escalation decision accuracy        (routing vs what the taxonomy says should happen)
-  C  reply quality on auto-handled rows  (LLM judge, scripts/judge_replies.py)
+  C  reply quality on auto-handled rows  (HUMAN scores on a 36-row subset)
+
+Component C uses HUMAN scores only. The llama3.1:8b judge was measured against them and
+failed (decisions.md #32, #33): linear-weighted kappa <= 0 on relevance, groundedness
+and correctness. Its scores are still printed for transparency and are explicitly
+labelled unreliable; they must not appear in any headline number.
 
 Reported through the auto_handle DECOMPOSITION, never as a raw auto_handle rate -- see
 decisions.md #31. auto_handle means "replied with no human involved", not "resolved".
@@ -33,6 +38,7 @@ from llm_relabel import TARGET, classify, resolve
 GOLDEN = "data/processed/golden_set.pkl"
 DECISIONS = "data/processed/escalation_decisions.pkl"
 JUDGE = "data/processed/judge_scores.pkl"
+HUMAN = "data/processed/human_scoring_sheet.csv"
 CLS_CACHE = "data/processed/golden_pipeline_intent.jsonl"
 OUT = "data/processed/eval_rollup.pkl"
 DIMS = ["relevance", "groundedness", "tone", "correctness"]
@@ -113,8 +119,28 @@ def main():
         print(f"      reason: {x.reason}")
 
     # ---------- C: reply quality ----------
-    print("\n" + "=" * 78 + "\nC. REPLY QUALITY on auto-handled rows (LLM judge)\n" + "=" * 78)
+    print("\n" + "=" * 78 + "\nC. REPLY QUALITY on auto-handled rows (HUMAN scores)\n" + "=" * 78)
+    if os.path.exists(HUMAN):
+        hs = pd.read_csv(HUMAN, dtype={"tweet_id": str})
+        for dim in DIMS:
+            hs[f"h_{dim}"] = pd.to_numeric(hs[f"h_{dim}"], errors="coerce")
+        rnd = hs[hs.sample_type == "random"]
+        print(f"HEADLINE: human-scored, {len(rnd)} randomly sampled auto-handled drafts")
+        print(f"{'dimension':<16}{'mean':>7}{'median':>8}{'>=4':>7}{'<=2':>7}{'n':>5}")
+        for dim in DIMS:
+            v = rnd[f"h_{dim}"].dropna()
+            print(f"{dim:<16}{v.mean():>7.2f}{v.median():>8.1f}"
+                  f"{100 * (v >= 4).mean():>6.0f}%{100 * (v <= 2).mean():>6.0f}%{len(v):>5}")
+        print(f"\nincluding the 12 deliberately-hard rows (n={len(hs)}), for contrast:")
+        for dim in DIMS:
+            v = hs[f"h_{dim}"].dropna()
+            print(f"  {dim:<16}{v.mean():>6.2f}")
+        print("\nCAVEAT: 24 random rows of 141 auto-handled, one annotator, so each mean\n"
+              "carries roughly +/- 0.2-0.3. It is the only reply-quality number in this\n"
+              "harness backed by a human, which is why it is the headline despite the n.")
     if os.path.exists(JUDGE):
+        print("\n--- LLM judge scores: RETAINED FOR TRANSPARENCY, NOT RELIABLE ---")
+        print("kappa_w <= 0 vs human on relevance/groundedness/correctness (#32).")
         j = pd.read_pickle(JUDGE)
         print(f"{'dimension':<16}{'mean':>7}{'median':>8}{'>=4':>7}{'<=2':>7}")
         for dim in DIMS:

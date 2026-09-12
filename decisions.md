@@ -1055,3 +1055,165 @@ This is the fifth entry in the #28 family — a figure that is technically corre
 materially misleading if quoted without its definition. The others were arithmetic or
 sampling errors; this one is purely a naming problem, which makes it the easiest to
 repeat and the hardest to notice.
+
+### 32. LLM-as-judge fails against human scores: kappa ≤ 0 on three of four dimensions
+
+`scripts/judge_replies.py` scored all 141 auto-handled drafts on relevance,
+groundedness, tone and correctness (1-5, llama3.1:8b, temperature 0). A human scored a
+36-row subset blind — the sheet deliberately withheld the judge's scores to avoid
+anchoring — and `scripts/judge_agreement.py` compared them.
+
+**Random rows only (n=24, the unbiased estimate):**
+
+| dimension | exact | within 1 | kappa_w | judge | human | bias |
+|---|---|---|---|---|---|---|
+| relevance | 33% | 62% | **−0.27** | 4.33 | 4.46 | −0.12 |
+| groundedness | 58% | 88% | **−0.08** | 4.92 | 4.54 | +0.38 |
+| tone | 83% | 100% | −0.07 | 4.96 | 4.88 | +0.08 |
+| correctness | 48% | 91% | **0.00** | 5.00 | 4.39 | **+0.61** |
+
+**All rows including the 12 deliberately-hard cases (n=36):**
+
+| dimension | exact | within 1 | kappa_w | judge | human | bias |
+|---|---|---|---|---|---|---|
+| relevance | 31% | 64% | −0.03 | 3.89 | 4.36 | −0.47 |
+| groundedness | 58% | 89% | −0.09 | 4.86 | 4.58 | +0.28 |
+| tone | 86% | 100% | −0.07 | 4.94 | 4.92 | +0.03 |
+| correctness | 54% | 94% | −0.05 | 4.97 | 4.51 | +0.46 |
+
+**Verdict: the judge does not work as a quality measure.** A weighted kappa of zero is
+chance agreement; negative is worse than chance. Three of four dimensions are at or
+below zero on the unbiased sample, including the two that matter most for safety —
+groundedness and correctness. The judge is also systematically **generous** on
+groundedness, tone and correctness, peaking at **+0.61** on correctness where it
+awarded a flat 5.00 to every scored row while the human averaged 4.39.
+
+**Correction to an earlier summary: the bias is not uniformly positive.** Relevance runs
+*negative* in both blocks (−0.12 random, −0.47 all-rows) — the judge is harsher than the
+human there. So the failure is not simple leniency; the judge is miscalibrated in
+different directions on different dimensions, which is worse, because a uniform offset
+could at least be subtracted.
+
+**Explicit caveat on tone — do not read its kappa either way.** Tone shows 83-86% exact
+and **100% within-1** agreement, which looks like the one success. It is not evidence of
+agreement. Both raters scored almost every draft 5 (judge mean 4.96, human 4.88), and
+kappa corrects for exactly that: when nearly all mass sits on one category, expected
+chance agreement approaches observed agreement and kappa collapses toward zero
+regardless of how well the raters actually track each other. **The tone kappa of −0.07
+is a variance-ceiling artifact and is uninformative.** Claiming agreement on tone from
+the 100% within-1 figure, or disagreement from the negative kappa, would both be wrong.
+The honest statement is that tone was not discriminating enough to measure.
+
+### 33. Two independent measurements agree the judge has no discriminative power
+
+#32's human comparison is the second finding to reach this conclusion, and the first was
+built without it in mind.
+
+The specificity check from #26 flags drafts asserting settings paths, version numbers or
+feature names absent from their grounding — a deterministic string comparison, not a
+judgement. The judge was kept deliberately blind to it so it could act as an independent
+probe. Result: **mean judge groundedness is 4.84 on the 19 flagged drafts and 4.84 on
+the 122 unflagged ones.** Identical to two decimal places. On the one dimension where an
+objective ground truth exists, the judge cannot separate the drafts that violate it from
+the drafts that do not.
+
+Two measurements, different methods, same conclusion: kappa ≤ 0 against a human, and
+zero separation against a deterministic flag. That convergence is what makes this a
+finding rather than a noisy result.
+
+**Likely causes, in order of confidence:**
+
+1. **Self-preference.** llama3.1:8b is judging llama3.1:8b's own output. The drafter and
+   the judge share priors, so a fabricated-but-plausible claim such as
+   `Settings > Battery > Battery Health` reads as correct to the judge for the same
+   reason the drafter produced it — this is the #29 prior surviving into the evaluator.
+2. **No independent grounding check.** The judge was shown the grounding text and asked
+   to compare, but nothing forced the comparison. The specificity flag performs the same
+   check mechanically and succeeds, which suggests the task needs execution, not
+   judgement.
+3. **Scale collapse.** The judge used only {1,3,5} for relevance and {3,4,5} for
+   correctness — it never produced a 2 or a 4 on relevance across 141 drafts. A rubric
+   asking for 1-5 that yields three anchors is measuring less than it claims.
+
+**Consequence for the harness and the report.** Reply quality is reported from human
+scores on the 36-row subset only (#34). Judge scores stay in the harness output, printed
+under an explicit unreliability banner, and appear in no headline number. The broader
+lesson matches #21 and #29: where correctness is mechanically checkable, check it
+mechanically — the deterministic flag outperformed the LLM judge on the only dimension
+where the two could be compared against a ground truth.
+
+### 34. Final evaluation harness rollup (deliverable 3)
+
+`scripts/eval_harness.py`, over the 200-row golden set. Every headline carries its
+caveat inline, in the harness output as well as here.
+
+**A. Intent classification — the aggregate is not trustworthy, the split is.**
+
+| | accuracy |
+|---|---|
+| qwen-selected strata (defect, residual, billing, battery) | **145/145 = 100.0%** |
+| independently sourced (downgrade, non_english, out_of_scope, blind_spot) | **39/55 = 70.9%** |
+| naive blended | 92.0% |
+| prevalence-reweighted | 95.2% |
+
+100.0% is impossible given the 70% precision measured for the same classifier in #14.
+The cause is the #18 non-independence again: those golden rows were drawn *from* qwen's
+predictions and kept only where the annotator agreed, so qwen agrees with them by
+construction. **The 92.0% blended figure inherits that circularity and must not be
+quoted as classifier accuracy.** The independently-sourced 70.9% is the defensible
+number, and it is dominated by `out_of_scope` at **3/18 (17%)** — the weakest component
+in the pipeline, consistent with its 53% detector precision (#14) and its 5.0% true
+prevalence (#15). Rule-gated intents score 100% (`non_english` 7/7,
+`ios_version_downgrade` 18/18), which is #21's decision paying off.
+
+A second caveat compounds the first: retrieval pools and drafting used the **gold**
+intent, not the prediction, so components B and C never inherit classification error.
+End-to-end numbers are optimistic by however much intent error would have propagated.
+
+**B. Escalation decision: 188/200 = 94.0%** against expectations derived from
+taxonomy.md's per-intent "Good resolution" lines, since `golden_set.csv` carries no
+correct-action column. The router implements the same taxonomy, so **this is largely an
+implementation-conformance check, not a validity check** — only the disagreements carry
+information. Two battery rows are marked `circular` (checked against the regex that
+routed them).
+
+The 12 disagreements split cleanly:
+
+- **8 rows, `no_usable_grounding`** (3 defect, 5 residual): retrieval surfaced nothing
+  usable where the taxonomy expects an answer. Genuine failures, and the same G3
+  topic-mismatch accepted as a v1 limitation in #25/#27.
+- **4 rows, `physical_or_hardware` override on residual**: cracked screens and water
+  damage. Here the router is arguably right and the *expectation* wrong — these are
+  `blind_spot` rows that §5 files under residual only for want of anywhere better
+  (#20). Scoring them as router errors understates the router and hides a taxonomy gap.
+
+So of 12 apparent errors, 8 are real and 4 are an artifact of the expectation source.
+
+**C. Reply quality: human scores, 24 randomly sampled auto-handled drafts.**
+
+| dimension | mean | median | ≥4 | ≤2 |
+|---|---|---|---|---|
+| relevance | 4.46 | 5.0 | 88% | 0% |
+| groundedness | 4.54 | 5.0 | 92% | 0% |
+| tone | 4.88 | 5.0 | 100% | 0% |
+| correctness | 4.39 | 4.0 | 91% | 0% |
+
+Including the 12 deliberately-hard rows (n=36): relevance 4.36, groundedness 4.58, tone
+4.92, correctness 4.51. **n=24 of 141, one annotator, so each mean carries roughly
+±0.2-0.3.** It is nonetheless the headline, because it is the only reply-quality figure
+in this harness backed by a human — the LLM judge failed validation (#32, #33) and its
+scores appear in no headline number.
+
+**The framing all of the above sits inside.** `auto_handle` is 141/200 (70.5%) and means
+"replied with no human involved", never "resolved":
+
+| what auto_handle actually did | n |
+|---|---|
+| answered from retrieved grounding | 64 |
+| asked a diagnostic question, resolving nothing | 45 |
+| answered from a stated policy fact | 18 |
+| emitted an identical canned template | 14 |
+
+**96/200 (48%) receive anything resembling an answer, and 14 of those are the same
+template.** The harness prints "Do not quote 70.5% as a resolution rate" in its own
+output so the caveat travels with the number.

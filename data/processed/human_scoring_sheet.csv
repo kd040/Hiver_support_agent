@@ -1,66 +1,66 @@
 tweet_id,sample_type,intent,route,customer_message,grounding_shown_to_drafter,draft_reply,h_relevance,h_groundedness,h_tone,h_correctness,h_notes
 587012,hard,general_complaint_nonactionable,grounded,It’s 0700 and my phone has already started this bullshit @BRAND. Restart x 1. Get it together. @BRAND,"past customer: Hey @BRAND. 5th time I’ve reset my phone today. Want to fix this? That’d be great.
 ---
-Apple's reply: @USER We'd be thrilled to assist. Which iPhone model and what iOS version is it running? Is an app freezing or the entire device?",What's specifically failing on your iPhone? Is it an app freezing or the entire device?,,,,,
+Apple's reply: @USER We'd be thrilled to assist. Which iPhone model and what iOS version is it running? Is an app freezing or the entire device?",What's specifically failing on your iPhone? Is it an app freezing or the entire device?,4,4,5,5,
 188494,random,software_feature_defect,grounded,Anyone else notice the new #IOS roll out means you can’t control the volume of your alarm? Well done @BRAND @BRAND your R&amp;D sucks!,"past customer: @BRAND In the next iOs 11.xx update at least have some dignity and add the option to adjusting snooze interval in your alarm clock!!!!!😡
 ---
-Apple's reply: @USER Thanks for reaching out. We want to ensure your voice is heard and we welcome your feedback here: https://t.co/eTPVYVFyd8","To adjust the alarm volume, go to Settings > Sounds & Haptics > Ringtone Volume.",,,,,
+Apple's reply: @USER Thanks for reaching out. We want to ensure your voice is heard and we welcome your feedback here: https://t.co/eTPVYVFyd8","To adjust the alarm volume, go to Settings > Sounds & Haptics > Ringtone Volume.",5,5,4,4,
 2709963,random,software_feature_defect,grounded,My pictures taking to long to update @BRAND ☹️,"past customer: @BRAND my apps are taking forever to update.
 ---
-Apple's reply: @USER We’d love to help. Does the issue persist with Wi-Fi and cellular data? Have you had a chance to restart the device?",We'd love to help. Does the issue persist with Wi-Fi and cellular data? Have you had a chance to restart the device?,,,,,
+Apple's reply: @USER We’d love to help. Does the issue persist with Wi-Fi and cellular data? Have you had a chance to restart the device?",We'd love to help. Does the issue persist with Wi-Fi and cellular data? Have you had a chance to restart the device?,5,5,5,5,
 1698419,hard,software_feature_defect,grounded,@BRAND why isn’t my phone connecting to WiFi?? 😫,"past customer: @BRAND unable to connect the wifi it shows it’s connected but the wifi signal is not showing &amp; unable to connect other wifi as well.. https://t.co/CcT9BNLYE6
 ---
-Apple's reply: @USER We would be glad to help with your Wi-Fi. Try the steps in this article: https://t.co/tdmlmF3jQa",Try restarting your router and your iPhone.,,,,,
+Apple's reply: @USER We would be glad to help with your Wi-Fi. Try the steps in this article: https://t.co/tdmlmF3jQa",Try restarting your router and your iPhone.,4,5,5,4,
 1813719,random,software_feature_defect,grounded,@BRAND my alarm won’t sound if my ringer is off ever since the iOS 11... so now I have to sleep with my ringer on? 🤷🏽‍♂️,"past customer: .@BRAND any thoughts as to why my alarm hasn’t gone off the past two mornings? Iphone v. 11.0.3
 ---
-Apple's reply: @USER We'd be happy to help. If you're still using iOS 11.0.3 on your device, the first thing we'd recommend is to back up your data and get the device up to date in Settings &gt; General &gt; Software Update, then test out the issue again. Let us know how it goes.",Get the device up to date in Settings > General > Software Update.,,,,,
+Apple's reply: @USER We'd be happy to help. If you're still using iOS 11.0.3 on your device, the first thing we'd recommend is to back up your data and get the device up to date in Settings &gt; General &gt; Software Update, then test out the issue again. Let us know how it goes.",Get the device up to date in Settings > General > Software Update.,3,4,4,5,
 2921538,random,software_feature_defect,grounded,@BRAND I need help regarding face ID on my iPhone X...,"past customer: @BRAND @BRAND how will iphone x recognize me with face id if I am wearing my du rag?
 ---
-Apple's reply: @USER Great Question! You can read more about changing your appearance with Face ID here: https://t.co/etk4MmVSpa","If you're having trouble with Face ID, try adjusting your settings by going to Settings > Face ID & Passcode and selecting ""Reset Face ID"".",,,,,
+Apple's reply: @USER Great Question! You can read more about changing your appearance with Face ID here: https://t.co/etk4MmVSpa","If you're having trouble with Face ID, try adjusting your settings by going to Settings > Face ID & Passcode and selecting ""Reset Face ID"".",4,5,5,5,
 2645654,random,general_complaint_nonactionable,grounded,"@BRAND - apple officially sucks - nothing works and I can't get any help. Probably spent about 6k on Apple products over the last 4 years, and the this shit is no longer working properly!!!!!","past customer: @BRAND is apple working on fixing the glitch with the latest update?
 ---
-Apple's reply: @USER We're happy to help you with this. When you say a glitch, what behavior are you referring to specifically? Thanks.",We're here to help. Can you tell us what specifically isn't working as expected on your Apple devices?,,,,,
-1224625,random,battery_drain,policy_fact,"I sat at my desk, phone in 75%... 43 minutes later I'm on 39% @BRAND wtf?",(none - fixed policy statement or canned template),"Settings > Battery shows which apps have used the most battery - worth starting there. Turning Low Power Mode on helps, and so does turning off Background App Refresh for apps that don't need it. It's also worth checking Settings > General > Software Update for a pending update.",,,,,
-2974488,random,ios_version_downgrade,policy_fact,Is there a way to downgrade my iPhone 6 back to iOS 10? It upgraded to 11 against my wishes and is now basically unusable. Hey @BRAND #iOS11 sucks.,(none - fixed policy statement or canned template),Downgrading to a previous iOS version is not supported once Apple stops signing the previous build.,,,,,
+Apple's reply: @USER We're happy to help you with this. When you say a glitch, what behavior are you referring to specifically? Thanks.",We're here to help. Can you tell us what specifically isn't working as expected on your Apple devices?,5,5,5,5,
+1224625,random,battery_drain,policy_fact,"I sat at my desk, phone in 75%... 43 minutes later I'm on 39% @BRAND wtf?",(none - fixed policy statement or canned template),"Settings > Battery shows which apps have used the most battery - worth starting there. Turning Low Power Mode on helps, and so does turning off Background App Refresh for apps that don't need it. It's also worth checking Settings > General > Software Update for a pending update.",5,5,5,5,
+2974488,random,ios_version_downgrade,policy_fact,Is there a way to downgrade my iPhone 6 back to iOS 10? It upgraded to 11 against my wishes and is now basically unusable. Hey @BRAND #iOS11 sucks.,(none - fixed policy statement or canned template),Downgrading to a previous iOS version is not supported once Apple stops signing the previous build.,4,4,4,X,
 2255261,hard,software_feature_defect,grounded,@BRAND Now the A-box and question mark is the first suggested word. What the hell? https://t.co/VK9HwysvrQ,"past customer: What is this stupid autocorrect question mark in a box @BRAND
 ---
-Apple's reply: @USER Hey, thanks for reaching out! Take a look at this article and let us know if it helps you get it resolved: https://t.co/MaraeomA15",Try turning off Predictive Text in Settings > General > Keyboard.,,,,,
+Apple's reply: @USER Hey, thanks for reaching out! Take a look at this article and let us know if it helps you get it resolved: https://t.co/MaraeomA15",Try turning off Predictive Text in Settings > General > Keyboard.,3,4,5,5,
 621804,hard,software_feature_defect,grounded,"can switch off automatic brightness? can't stand the screen changing as I look at it, makes me dizzy @BRAND 😰 😵 https://t.co/xQoPX1mhno","past customer: I am TIRED of this AUTO-BRIGHTNESS that I CAN’T TURN OFF APPLE ‼️@BRAND
 ---
-Apple's reply: @USER We'd be more than happy to help. Please tell us which version of iOS you have installed on your device.",Please tell us which version of iOS you have installed on your device.,,,,,
+Apple's reply: @USER We'd be more than happy to help. Please tell us which version of iOS you have installed on your device.",Please tell us which version of iOS you have installed on your device.,4,4,5,5,
 1370395,hard,software_feature_defect,grounded,@BRAND iPhone 8 Notes shows Folders and Edit but won’t open or create anything. Suggestions? https://t.co/p0wJlFhdH3,"past customer: @BRAND your recent update has rendered it impossible to edit an existing note. Any attempt takes you to the start. Restore settings
 ---
-Apple's reply: @USER We want you to be able to edit your notes. To clarify, you restored settings and this is still happening?",Restore settings.,,,,,
+Apple's reply: @USER We want you to be able to edit your notes. To clarify, you restored settings and this is still happening?",Restore settings.,4,5,5,5,
 2016335,hard,software_feature_defect,grounded,"@BRAND ios11 made my phone get stuck in reboot loops, now can’t make any phone calls in 11.1. No Genius Bar appts. Appalling.","past customer: @BRAND I have downloaded iOS 11.1 and i can not make calls anymore
 ---
-Apple's reply: @USER Let’s work together to get your iPhone working again. Tell us what happens when you try to make calls, and we’ll get started.",Let’s work together to get your iPhone working again. Tell us what happens when you try to make calls.,,,,,
+Apple's reply: @USER Let’s work together to get your iPhone working again. Tell us what happens when you try to make calls, and we’ll get started.",Let’s work together to get your iPhone working again. Tell us what happens when you try to make calls.,4,5,5,5,
 2978335,hard,software_feature_defect,grounded,"Is @BRAND going to fix the #macOSHighSierra issues? New update barely reads any USB you plug in a mac, if it reads at all","past customer: @BRAND my Mac has crashed after trying to install #macOSHighSierra Help?!! https://t.co/I3ieFMJr6Q
 ---
-Apple's reply: @USER You're in the right place and we'll do all we can to help you out. If your Mac is no longer booting and providing a prohibitory sign, you'll want to reinstall macOS using Recovery Mode. For help with this step, check out: https://t.co/rG6X7FwMFb","If your Mac is no longer booting and providing a prohibitory sign, you'll want to reinstall macOS using Recovery Mode.",,,,,
+Apple's reply: @USER You're in the right place and we'll do all we can to help you out. If your Mac is no longer booting and providing a prohibitory sign, you'll want to reinstall macOS using Recovery Mode. For help with this step, check out: https://t.co/rG6X7FwMFb","If your Mac is no longer booting and providing a prohibitory sign, you'll want to reinstall macOS using Recovery Mode.",4,5,5,5,
 2212859,hard,general_complaint_nonactionable,grounded,@BRAND you better fix this bug please like holy fuck,"past customer: @BRAND @BRAND running out of time to fix this bug, ridiculous.
 ---
-Apple's reply: @USER What issues are you running into? We're here for you.",What issues are you experiencing with your device?,,,,,
+Apple's reply: @USER What issues are you running into? We're here for you.",What issues are you experiencing with your device?,5,5,5,5,
 2980242,random,general_complaint_nonactionable,grounded,Bruh I can see my background while I’m on twitter 🙄 wth is wrong with my phone 😤 @BRAND,"past customer: @BRAND my phone is broken 😑.
 ---
-Apple's reply: @USER We'd be glad to assist! What issues are you experiencing?",What specifically is failing with your background image on Twitter?,,,,,
-286865,random,ios_version_downgrade,policy_fact,@BRAND my phone didn’t start tripping until I updated it to iOS 11. Can I go back or y’all send me a new phone? This is ridiculous,(none - fixed policy statement or canned template),Downgrading to a previous iOS version is not supported once Apple stops signing the previous build.,,,,,
+Apple's reply: @USER We'd be glad to assist! What issues are you experiencing?",What specifically is failing with your background image on Twitter?,5,5,5,5,
+286865,random,ios_version_downgrade,policy_fact,@BRAND my phone didn’t start tripping until I updated it to iOS 11. Can I go back or y’all send me a new phone? This is ridiculous,(none - fixed policy statement or canned template),Downgrading to a previous iOS version is not supported once Apple stops signing the previous build.,5,5,5,5,
 1697327,random,general_complaint_nonactionable,grounded,@BRAND has been really annoying lately fix yo shit,"past customer: @BRAND when y’all gone fix this shit
 ---
-Apple's reply: @USER We'd love to help. Are you still having an issue with being able to see emojis that are being sent from other people?",We'd love to help. Are you still having an issue with @BRAND or is there something specific that's not working as expected?,,,,,
+Apple's reply: @USER We'd love to help. Are you still having an issue with being able to see emojis that are being sent from other people?",We'd love to help. Are you still having an issue with @BRAND or is there something specific that's not working as expected?,5,5,5,3,
 1703006,random,software_feature_defect,grounded,Ever since updating to iOS 11.1 my Watch only shows phone numbers and no names of contacts for iMessage notifications @BRAND,"past customer: @BRAND My Apple Watch is only showing phone numbers in the messaging app now instead of people’s names. What can I do to fix?
 ---
-Apple's reply: @USER We can definitely help. Has the watch been restarted since this happened? If not we'd want to start there with these steps: https://t.co/gZrStAoDfj","Restart your Apple Watch and check if the issue persists. If so, try restarting your iPhone as well.",,,,,
+Apple's reply: @USER We can definitely help. Has the watch been restarted since this happened? If not we'd want to start there with these steps: https://t.co/gZrStAoDfj","Restart your Apple Watch and check if the issue persists. If so, try restarting your iPhone as well.",5,5,5,4,
 1837040,random,software_feature_defect,grounded,@BRAND iOS 11 has endless bugs. For example when you send a text the data entry box disappears /cannot continue thread. And many more! Help.,"past customer: @BRAND ever since ios11 my sent text arrive incomplete. Anyone else having this problem?
 ---
-Apple's reply: @USER We'll be happy to see how we can help. Which device and version of iOS 11 are you using? Check in Settings &gt; General &gt; About.",Check in Settings > General > About to see your iOS 11 version.,,,,,
+Apple's reply: @USER We'll be happy to see how we can help. Which device and version of iOS 11 are you using? Check in Settings &gt; General &gt; About.",Check in Settings > General > About to see your iOS 11 version.,5,5,5,4,
 1163429,random,general_complaint_nonactionable,grounded,Yo @BRAND you man have mashed my phone up with this new update 😡,"past customer: SO OVER MY PHONE...@BRAND what have you done with this update 😩
 ---
-Apple's reply: @USER We're happy to help. What is happening with your iPhone?",We're happy to help. What is specifically not working on your iPhone?,,,,,
+Apple's reply: @USER We're happy to help. What is happening with your iPhone?",We're happy to help. What is specifically not working on your iPhone?,3,5,5,4,
 1790380,hard,general_complaint_nonactionable,grounded,Amazing. The moment @BRAND announces the new iPhones and the new software drops...my Iphone 6 goes to complete garbage. One reset a day,"past customer: Why does your new software have to make my iphone6 obsolete 😫 shouldn’t have upgraded. @BRAND @BRAND
 ---
-Apple's reply: @USER Thank you for reaching out to us. Let’s work together to find the best course of action for this issue. To start, what device model are you using and what issue(s) are you experiencing exactly?",What device model are you using and what issue(s) are you experiencing exactly?,,,,,
-2008235,random,battery_drain,policy_fact,"@BRAND - The battery life on my 6 plus has been totally trashed since upgrading to iOS11, can’t get half a day without a charge 😠",(none - fixed policy statement or canned template),"Settings > Battery shows which apps have used the most battery - worth starting there. Turning Low Power Mode on helps, and so does turning off Background App Refresh for apps that don't need it. It's also worth checking Settings > General > Software Update for a pending update.",,,,,
-1168864,random,ios_version_downgrade,policy_fact,@BRAND either Help us or Let us downgrade Frm ios 11..!! 😭,(none - fixed policy statement or canned template),Downgrading is not supported once Apple stops signing the previous iOS build.,,,,,
+Apple's reply: @USER Thank you for reaching out to us. Let’s work together to find the best course of action for this issue. To start, what device model are you using and what issue(s) are you experiencing exactly?",What device model are you using and what issue(s) are you experiencing exactly?,3,5,5,4,
+2008235,random,battery_drain,policy_fact,"@BRAND - The battery life on my 6 plus has been totally trashed since upgrading to iOS11, can’t get half a day without a charge 😠",(none - fixed policy statement or canned template),"Settings > Battery shows which apps have used the most battery - worth starting there. Turning Low Power Mode on helps, and so does turning off Background App Refresh for apps that don't need it. It's also worth checking Settings > General > Software Update for a pending update.",4,5,5,4,
+1168864,random,ios_version_downgrade,policy_fact,@BRAND either Help us or Let us downgrade Frm ios 11..!! 😭,(none - fixed policy statement or canned template),Downgrading is not supported once Apple stops signing the previous iOS build.,4,5,5,4,
 1048067,hard,software_feature_defect,grounded,Dear @BRAND @BRAND my iPhone 6plus keeps dropping calls (call failed). I executed all updates. Please advise.,"past customer: @BRAND @BRAND what is going on? I have an iPhone 6S 11.2 beta and everytime I try to make a call it automatically drops. Please help.
 ---
 Apple's reply: @USER We can help out. Let's start with these steps: https://t.co/U53YusKX3z","Let's try to draft a reply based on the grounding material.
@@ -71,37 +71,37 @@ However, since the customer is on an iPhone 6 Plus, we can try to provide a more
 
 Here's a possible reply:
 
-Try restarting your iPhone and then go to Settings > Phone > My Number and make sure it's",,,,,
+Try restarting your iPhone and then go to Settings > Phone > My Number and make sure it's",5,5,5,5,
 693972,hard,software_feature_defect,grounded,"Bug still available in status bar. IOS 11.1.2 Developer iPhone 6 plus
 @BRAND https://t.co/cziqLhMMaZ","past customer: Two iOS 11 releases later and this bug is still very much there @BRAND @BRAND https://t.co/laDvTnmBo8
 ---
-Apple's reply: @USER We've made some changes in iOS 11 to the Control Center. Look at this link for more info on those changes: https://t.co/vzVz37YMv0",We've made some changes in iOS 11 to the Control Center. Try resetting the Control Center by going to Settings > Control Center > Customize Controls.,,,,,
+Apple's reply: @USER We've made some changes in iOS 11 to the Control Center. Look at this link for more info on those changes: https://t.co/vzVz37YMv0",We've made some changes in iOS 11 to the Control Center. Try resetting the Control Center by going to Settings > Control Center > Customize Controls.,5,5,5,4,
 353659,random,general_complaint_nonactionable,grounded,@BRAND wtf did you do to my phone,"past customer: @BRAND fix my phone.
 ---
-Apple's reply: @USER We're happy to help. Could you please provide a few details about what you're experiencing?",We're happy to help. Could you please tell us what specifically is not working on your phone?,,,,,
+Apple's reply: @USER We're happy to help. Could you please provide a few details about what you're experiencing?",We're happy to help. Could you please tell us what specifically is not working on your phone?,4,5,5,5,
 2692851,random,software_feature_defect,grounded,@BRAND yo my back camera fucked up I think y’all sent me a defective phone,"past customer: @BRAND fix my phone. I can’t use my back camera or the flashlight. Shit I’m trying to send my boo a thothy pic
 ---
-Apple's reply: @USER We'd love to help with your iPhone's camera. Let us know if the steps in this guide make a difference: https://t.co/r1DRfaFLIU",We'd love to help with your iPhone's camera. Let us know if the steps in this guide make a difference.,,,,,
+Apple's reply: @USER We'd love to help with your iPhone's camera. Let us know if the steps in this guide make a difference: https://t.co/r1DRfaFLIU",We'd love to help with your iPhone's camera. Let us know if the steps in this guide make a difference.,4,5,5,5,
 1846682,random,general_complaint_nonactionable,grounded,@BRAND is the update okay for the 6s now? My phone keeps telling me to update to 11.0.3 but to scared Incase my phone messes up again,"past customer: Does iPhone 6 get update for 11.2 too?
 @BRAND
 ---
-Apple's reply: @USER Your iPhone 6 is compatible with the iOS 11.2. Are you experiencing any issues that we may assist you with before you update?",What specifically is failing on your iPhone 6 that's prompting the update notification?,,,,,
+Apple's reply: @USER Your iPhone 6 is compatible with the iOS 11.2. Are you experiencing any issues that we may assist you with before you update?",What specifically is failing on your iPhone 6 that's prompting the update notification?,3,4,5,4,
 545240,random,software_feature_defect,grounded,"@BRAND on iOS 11.1.2, using the iPhone X. I’m not receiving Whatsapp notifications when the phone is locked. If I do it’s always late by exactly 3 minutes.","past customer: @BRAND i don’t get whatsapp notifications until i enter to the app since iOS was updated
 ---
-Apple's reply: @USER We want you to be able to get all of your notifications. Let's start with this article https://t.co/dUz22quEPo https://t.co/GDrqU22YpT","Try going to Settings > Notifications > WhatsApp and make sure ""Show on Lock Screen"" is turned on.",,,,,
+Apple's reply: @USER We want you to be able to get all of your notifications. Let's start with this article https://t.co/dUz22quEPo https://t.co/GDrqU22YpT","Try going to Settings > Notifications > WhatsApp and make sure ""Show on Lock Screen"" is turned on.",4,3,5,3,
 2302322,random,software_feature_defect,grounded,"Why are the music control buttons not working anymore after the update, @BRAND FIX THIS!","past customer: @BRAND should fix the shuffle/repeat buttons in the Music app. Impossible to tell when it is on/off, and I’m not even colour blind.
 ---
-Apple's reply: @USER Thanks for reaching out. We highly recommend you submit feature feedback about this here: https://t.co/eTPVYVFyd8",We highly recommend submitting feature feedback about this issue.,,,,,
+Apple's reply: @USER Thanks for reaching out. We highly recommend you submit feature feedback about this here: https://t.co/eTPVYVFyd8",We highly recommend submitting feature feedback about this issue.,5,3,5,5,
 1565192,random,software_feature_defect,grounded,@BRAND can y’all PLEASE fix the issue with your keyboard and specific letters turning to symbols???,"past customer: I’m gonna need @BRAND to fix the issue with typing the letter I️ and it turning to some symbols 😑😑😑😑😑😑😑😑😑
 ---
-Apple's reply: @USER We can help. What device does this occur with? Which iOS version is shown in Settings &gt; General &gt; About?",What device does this occur with? Which iOS version is shown in Settings > General > About?,,,,,
+Apple's reply: @USER We can help. What device does this occur with? Which iOS version is shown in Settings &gt; General &gt; About?",What device does this occur with? Which iOS version is shown in Settings > General > About?,5,4,5,4,
 150002,random,general_complaint_nonactionable,grounded,"Dear @BRAND, why can I download countless apps and take all the photos in the world but there's never room on my phone for a single song on @USER, even when I delete almost everything. Are you being a sneaky prawn?🍤","past customer: Why did a majority of my pictures get deleted from my phone @BRAND 🙂🙂🙂
 ---
-Apple's reply: @USER We understand the importance of your photos, and we're here to help. Were any changes made to your device, any upgrades?","Were any recent changes made to your device, such as an upgrade or restore?",,,,,
+Apple's reply: @USER We understand the importance of your photos, and we're here to help. Were any changes made to your device, any upgrades?","Were any recent changes made to your device, such as an upgrade or restore?",5,4,5,5,
 1857444,hard,software_feature_defect,grounded,@BRAND iPhone 6plus iOs11 lagging all the time. Using Google Keyboard cause is imposible to use Apple's one. We need an update!!!!!,"past customer: Since Ive updated my @BRAND 6S Plus to the new IOS 11.0.3 its been super slow and unresponsive :/ 👎🏾 @BRAND
 ---
-Apple's reply: @USER We are here for you. Any particular apps that are slow? Have you restarted since this began?",Have you restarted your iPhone since updating to iOS 11?,,,,,
+Apple's reply: @USER We are here for you. Any particular apps that are slow? Have you restarted since this began?",Have you restarted your iPhone since updating to iOS 11?,5,4,5,5,
 262612,random,general_complaint_nonactionable,grounded,Phones fucked won't turn on hey thanks @BRAND 👌🏼,"past customer: @BRAND yeah what the fuck did u do to my phone it wont turn off or let me do anything, fix it
 ---
-Apple's reply: @USER We want to help get your iPhone working properly. Which iOS, and iPhone are you using?",We want to help get your iPhone working properly. Which iOS and iPhone model are you using?,,,,,
-633948,random,battery_drain,policy_fact,@BRAND when is this update going to be fixed. My phone has NEVER lost charge this fast!!!!,(none - fixed policy statement or canned template),"Settings > Battery shows which apps have used the most battery - worth starting there. Turning Low Power Mode on helps, and so does turning off Background App Refresh for apps that don't need it. It's also worth checking Settings > General > Software Update for a pending update.",,,,,
+Apple's reply: @USER We want to help get your iPhone working properly. Which iOS, and iPhone are you using?",We want to help get your iPhone working properly. Which iOS and iPhone model are you using?,5,4,5,4,
+633948,random,battery_drain,policy_fact,@BRAND when is this update going to be fixed. My phone has NEVER lost charge this fast!!!!,(none - fixed policy statement or canned template),"Settings > Battery shows which apps have used the most battery - worth starting there. Turning Low Power Mode on helps, and so does turning off Background App Refresh for apps that don't need it. It's also worth checking Settings > General > Software Update for a pending update.",5,4,5,4,
