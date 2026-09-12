@@ -971,10 +971,10 @@ back to the code that fired it.
 | `policy_fact` | auto_handle | `stated_policy_fact:*` or `canned_template:*` |
 | `grounded` | auto_handle | `grounded:thread=…,rank=…,gated_score=…` |
 
-**Result over 200 rows: 154 auto_handle (77%), 46 escalate (23%). All 46 escalated rows
-carry a non-empty stated reason** (asserted in code, not just reported), and all 46 have
-`final_draft` null — an escalated row never ships customer-facing text. Reasons in use:
-`safety_override` 20, policy strings 18, `no_usable_grounding` 8.
+**Result over 200 rows: 141 auto_handle (70.5%), 59 escalate (29.5%). All 59 escalated
+rows carry a non-empty stated reason** (asserted in code, not just reported), and all 59
+have `final_draft` null — an escalated row never ships customer-facing text. Reasons in
+use: `safety_override` 33, policy strings 18, `no_usable_grounding` 8.
 
 **The length/narration guard found one more defect than the length check alone.** Two of
 200 drafts narrate themselves; only one of those exceeds 280 characters. The 558-char
@@ -982,7 +982,12 @@ monologue was already known, but a second draft narrates *within* tweet length a
 have shipped. Both are `software_feature_defect`, both flagged not rejected, consistent
 with #26. Pinned in `tests/test_draft_guards.py`.
 
-**NOT formalization — `billing_account` is mislabelled as auto_handle, 13 rows.**
+**RESOLVED: `billing_account` now escalates uniformly.** Originally 13 billing rows
+routed `grounded` and were labelled `auto_handle`; they now escalate by intent-level
+policy via `POLICY_ESCALATE_INTENTS`, reusing the existing
+`account_or_payment_action` reason label rather than adding a new one. All 20 billing
+rows escalate. This is the 13-row swing that moved the split from 154/46 to 141/59.
+The original finding, kept because the reasoning is the durable part:
 taxonomy §4 is explicit: "This intent should escalate by policy regardless of classifier
 confidence: account and payment actions are not safe to auto-handle." Seven billing rows
 do escalate, via the account/payment override. The other 13 route `grounded` and are
@@ -1000,16 +1005,53 @@ rather than silently decided. Two defensible readings:
   escalation that happens to be phrased as a reply, §4 is satisfied, and the split
   becomes **141/59 (71/29)**.
 
-The second matches taxonomy §4 as written and is what I would pick, but it is a 13-row
-swing in the headline auto-handle rate, so it is the user's call. Left as-is pending
-that decision.
+The second reading was adopted: §4 as written wins, and a drafted redirect is an
+escalation that happens to be phrased as a reply. Note that the drafts for those 13 rows
+were never unsafe — 7 said "DM us", 6 redirected to another channel, none attempted an
+account action. The defect was the label, not the output, which is exactly the kind of
+error a route-to-action mapping can hide.
 
-Two smaller notes in the same family, not changed:
+**`out_of_scope` stays 18/18 escalate — a deliberate conservative default.** §7
+technically permits partial auto-handling: praise takes a polite acknowledgment, phishing
+an acknowledgment plus the report channel. Not implemented, on the grounds that the
+intent is 5.0% of traffic (#15), its detector is the weakest in the pipeline at 53%
+precision (#14), and the praise sub-kind is empirically near-zero (0/15, taxonomy §7) —
+so the auto-handleable slice of an already-small, already-unreliable intent is not worth
+the risk of acknowledging something that turns out not to be praise. Revisit only if
+`out_of_scope` detection improves.
 
-- `out_of_scope` is 18/18 escalate, but §7 says praise takes a polite acknowledgment and
-  phishing an acknowledgment plus the report channel — so §7 arguably permits
-  auto-handling part of this intent. Current behaviour is deliberately conservative.
-- `general_complaint_nonactionable` auto-handles 45 rows by asking a diagnostic question,
-  which resolves nothing. That is correct per §5 ("auto-handling should mean 'ask one
-  good diagnostic question'"), but it means `auto_handle` must not be read as "resolved"
-  anywhere in the report — it means "replied without a human".
+**Narration guard needed no extension.** The check was already length-independent: of the
+two flagged drafts, the 121-character one is caught by `narration` alone with no length
+flag, and only the 558-character one trips both. Verified rather than assumed.
+
+
+### 31. REQUIRED FRAMING: `auto_handle` means "replied without a human", not "resolved"
+
+Follow-up to #30, flagged as required framing for the report rather than an
+implementation note.
+
+The headline figure is **141 of 200 auto-handled (70.5%)**. That number will be read as a
+resolution rate, and it is not one. **45 of those 141 rows (32%) are
+`general_complaint_nonactionable`, where the correct reply is a diagnostic question that
+resolves nothing by design** (taxonomy §5: "auto-handling should mean 'ask one good
+diagnostic question', not 'draft a fix'"). The system replied without a human; the
+customer's problem is exactly as unsolved as before.
+
+So the honest decomposition of the 141:
+
+| what auto_handle actually did | n |
+|---|---|
+| answered from grounding (`software_feature_defect`) | 64 |
+| asked a diagnostic question, resolving nothing (`general_complaint_nonactionable`) | **45** |
+| answered from a stated fact (`ios_version_downgrade`) | 18 |
+| emitted a canned template (`battery_drain`) | 14 |
+
+At most 96 of 200 rows (48%) receive something resembling an answer, and 14 of those are
+an identical template. `scripts/escalate.py` prints this caveat alongside the rate and
+says "Do not quote 70.5% as a resolution rate" in its own output, so the framing travels
+with the number instead of living only here.
+
+This is the fifth entry in the #28 family — a figure that is technically correct and
+materially misleading if quoted without its definition. The others were arithmetic or
+sampling errors; this one is purely a naming problem, which makes it the easiest to
+repeat and the hardest to notice.

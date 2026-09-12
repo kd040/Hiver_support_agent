@@ -128,26 +128,26 @@ Try restarting your iPhone and then go to Settings > Phone > My Number and make 
 646788,general_complaint_nonactionable,escalate_override,escalate,safety_override:physical_or_hardware,,[],[],1,32
 2050583,general_complaint_nonactionable,grounded,auto_handle,"grounded:thread=2439759,rank=1,gated_score=0.79",What type of issues are you experiencing with your iPhone since updating to the latest software?,[],[],3,96
 656660,general_complaint_nonactionable,no_usable_grounding,escalate,no_usable_grounding: zero of top-5 retrieval candidates passed gates G1-G4,,[],[],0,28
-1583854,billing_account,grounded,auto_handle,"grounded:thread=2068241,rank=1,gated_score=0.62",We'd like to offer any help we can. Are you wanting to change store regions? Let us know via DM. We'll go from there.,[],[],1,117
-2398162,billing_account,grounded,auto_handle,"grounded:thread=354077,rank=0,gated_score=0.59",We'd be happy to help you with your billing concern. Please contact our iTunes Store support team for assistance.,[],[],3,113
+1583854,billing_account,escalate_override,escalate,safety_override:account_or_payment_action,,[],[],1,32
+2398162,billing_account,escalate_override,escalate,safety_override:account_or_payment_action,,[],[],3,32
 2320373,billing_account,escalate_override,escalate,safety_override:account_or_payment_action,,[],[],3,32
 2062725,billing_account,escalate_override,escalate,safety_override:account_or_payment_action,,[],[],5,32
-549597,billing_account,grounded,auto_handle,"grounded:thread=553555,rank=0,gated_score=0.68",Confirm your country for us in a DM and we'll continue.,[],[],4,55
+549597,billing_account,escalate_override,escalate,safety_override:account_or_payment_action,,[],[],4,32
 1864265,billing_account,escalate_override,escalate,safety_override:account_or_payment_action,,[],[],5,32
-604020,billing_account,grounded,auto_handle,"grounded:thread=1990869,rank=0,gated_score=0.78",We'd like to help you with your billing issue. Please DM us so we can assist you further.,[],[],5,89
-1779373,billing_account,grounded,auto_handle,"grounded:thread=620096,rank=0,gated_score=0.73",We'd be happy to help with your Apple Music question. Please DM us so we can discuss your billing and account settings in more detail.,[],[],5,134
-1402941,billing_account,grounded,auto_handle,"grounded:thread=1988538,rank=1,gated_score=0.66",We'd be happy to help. Please DM your iPhone model and country. We'll pick this conversation there.,[],[],1,99
-1158023,billing_account,grounded,auto_handle,"grounded:thread=2710977,rank=0,gated_score=0.74",We'd like to get you connected with the experts that can help with your Apple ID. Reach out to them here.,[],[],4,105
-944331,billing_account,grounded,auto_handle,"grounded:thread=1980632,rank=0,gated_score=0.75",We'd like to take a look into this. Please send us a DM with any additional information.,[],[],4,88
+604020,billing_account,escalate_override,escalate,safety_override:account_or_payment_action,,[],[],5,32
+1779373,billing_account,escalate_override,escalate,safety_override:account_or_payment_action,,[],[],5,32
+1402941,billing_account,escalate_override,escalate,safety_override:account_or_payment_action,,[],[],1,32
+1158023,billing_account,escalate_override,escalate,safety_override:account_or_payment_action,,[],[],4,32
+944331,billing_account,escalate_override,escalate,safety_override:account_or_payment_action,,[],[],4,32
 2890761,billing_account,escalate_override,escalate,safety_override:account_or_payment_action,,[],[],4,32
 2567073,billing_account,escalate_override,escalate,safety_override:account_or_payment_action,,[],[],5,32
-2555444,billing_account,grounded,auto_handle,"grounded:thread=427100,rank=0,gated_score=0.60",We can take a look at this with you. What type of device are you using?,[],[],2,71
+2555444,billing_account,escalate_override,escalate,safety_override:account_or_payment_action,,[],[],2,32
 2957162,billing_account,escalate_override,escalate,safety_override:account_or_payment_action,,[],[],0,32
-125779,billing_account,grounded,auto_handle,"grounded:thread=1896081,rank=0,gated_score=0.68",Our iTunes Store experts can assist you with changing your Apple ID store region. You can get in touch with them privately for further assistance.,[],[],4,146
-719937,billing_account,grounded,auto_handle,"grounded:thread=2029106,rank=0,gated_score=0.77",We can help get you pointed in the right direction. DM us with details on what's happening with the order and we'll go from there.,[],[],4,130
-1221968,billing_account,grounded,auto_handle,"grounded:thread=1756276,rank=0,gated_score=0.76",We'd be happy to help with your issue. Please get in touch with our iTunes team for assistance.,[],[],3,95
+125779,billing_account,escalate_override,escalate,safety_override:account_or_payment_action,,[],[],4,32
+719937,billing_account,escalate_override,escalate,safety_override:account_or_payment_action,,[],[],4,32
+1221968,billing_account,escalate_override,escalate,safety_override:account_or_payment_action,,[],[],3,32
 151441,billing_account,escalate_override,escalate,safety_override:account_or_payment_action,,[],[],5,32
-2272011,billing_account,grounded,auto_handle,"grounded:thread=2588330,rank=0,gated_score=0.86",We'd like to help you get to the right place for help. Connect with our iTunes Store Support to start resolving your issue.,[],[],5,123
+2272011,billing_account,escalate_override,escalate,safety_override:account_or_payment_action,,[],[],5,32
 1820151,battery_drain,escalate_override,escalate,safety_override:physical_or_hardware,,[],[],1,32
 2639718,battery_drain,policy_fact,auto_handle,canned_template:battery_drain,"Settings > Battery shows which apps have used the most battery - worth starting there. Turning Low Power Mode on helps, and so does turning off Background App Refresh for apps that don't need it. It's also worth checking Settings > General > Software Update for a pending update.",[],[],2,279
 1886570,battery_drain,policy_fact,auto_handle,canned_template:battery_drain,"Settings > Battery shows which apps have used the most battery - worth starting there. Turning Low Power Mode on helps, and so does turning off Background App Refresh for apps that don't need it. It's also worth checking Settings > General > Software Update for a pending update.",[],[],3,279

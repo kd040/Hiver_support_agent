@@ -128,8 +128,19 @@ OVERRIDES = {
 }
 
 
-def check_overrides(text):
-    return [k for k, rx in OVERRIDES.items() if rx.search(str(text))]
+# Intent-level policy escalation, independent of what the message says. taxonomy.md
+# section 4: billing_account "should escalate by policy regardless of classifier
+# confidence: account and payment actions are not safe to auto-handle." The regex
+# override caught only 7 of 20 billing rows; the other 13 drafted safe-but-mislabelled
+# redirects (#30). Reuses the existing reason label rather than adding a new one.
+POLICY_ESCALATE_INTENTS = {"billing_account": "account_or_payment_action"}
+
+
+def check_overrides(text, intent=None):
+    fired = [k for k, rx in OVERRIDES.items() if rx.search(str(text))]
+    if intent in POLICY_ESCALATE_INTENTS:
+        fired = sorted(set(fired) | {POLICY_ESCALATE_INTENTS[intent]})
+    return fired
 
 
 # --- fix 3: post-generation specificity check. Flags, never rejects -- the rate is
@@ -293,7 +304,7 @@ def main():
             rec = {"tweet_id": q.tweet_id, "intent": q.intent, "q_text": q.customer_text,
                    "n_candidates": len(cands), "n_usable": n_usable}
 
-            fired = check_overrides(q.customer_text)
+            fired = check_overrides(q.customer_text, q.intent)
             if fired:
                 rec |= {"route": "escalate_override", "draft": ESCALATE_OVERRIDE,
                         "override": ",".join(fired), "grounded_on": None,

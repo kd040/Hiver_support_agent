@@ -6,6 +6,12 @@ the stated reason the assignment requires. Reason labels are REUSED from the rou
 layer rather than reinvented, so a reason here can always be traced to the check that
 fired it.
 
+IMPORTANT FRAMING, required wherever the auto_handle rate is quoted: auto_handle means
+"a reply went out with no human involved", NOT "the case was resolved". 45 of the 141
+auto-handled rows are general_complaint_nonactionable, where the correct reply is a
+diagnostic question (taxonomy section 5) that resolves nothing by design. Quoting 70.5%
+as a resolution rate would overstate the system by roughly a third of its own output.
+
 Mapping (route -> action):
   escalate_override    escalate    taxonomy sections 3/4/7 hard safety overrides
   no_draft_policy      escalate    non_english (section 6), out_of_scope (section 7)
@@ -69,8 +75,14 @@ def main():
     n = len(d)
     auto = (d.action == "auto_handle").sum()
     print(f"=== escalation decisions over {n} rows ===")
-    print(f"  auto_handle {auto:>4}  ({100 * auto / n:.0f}%)")
-    print(f"  escalate    {n - auto:>4}  ({100 * (n - auto) / n:.0f}%)")
+    print(f"  auto_handle {auto:>4}  ({100 * auto / n:.1f}%)")
+    print(f"  escalate    {n - auto:>4}  ({100 * (n - auto) / n:.1f}%)")
+    diag = ((d.action == "auto_handle") & (d.intent == "general_complaint_nonactionable")).sum()
+    print(f"\n  NOTE: auto_handle means REPLIED WITHOUT A HUMAN, not RESOLVED.")
+    print(f"  {diag} of {auto} auto-handled rows ({100 * diag / auto:.0f}%) are "
+          f"general_complaint_nonactionable,")
+    print(f"  where the correct reply is a diagnostic question that resolves nothing.")
+    print(f"  Do not quote {100 * auto / n:.1f}% as a resolution rate.")
 
     print(f"\nby route:")
     print(pd.crosstab(d.route, d.action).to_string())
