@@ -121,7 +121,77 @@ from the nearest, possibly irrelevant, neighbor).
 Every number in this table carries a caveat addressed directly in §4 —
 several of them are the report's central findings, not footnotes.
 
+## 3. Golden Evaluation Set
+
+### Sampling strategy
+
+The golden set is 200 hand-checked examples drawn from the full cleaned
+corpus (48,968 clean two-turn threads), not from the smaller samples used
+during taxonomy discovery. Sampling was **deliberately not proportional**
+to the corpus's natural intent distribution, for two reasons stated
+up front:
+
+1. **Rare-but-real intents need a measurement floor.** `ios_version_downgrade`
+   and `out_of_scope` are both under 5% of traffic (0.5% and ~5%
+   respectively, per the corrected corpus-wide estimate in decisions #15).
+   A proportional 200-row sample would have contained roughly 1 and 10
+   examples of each — not enough to measure per-intent behavior reliably.
+   Both were floored at 18 rows instead, at the acknowledged cost of
+   9–18x over-representation relative to their true traffic share.
+2. **A known taxonomy blind spot was deliberately probed, not avoided.**
+   12 of the 200 rows were specifically sourced from a keyword pass for
+   retail/hardware-logistics language (store, appointment, repair,
+   cracked, screen) inside the residual bucket — messages the taxonomy
+   has no dedicated intent for (§4, failure mode 4) — so that this gap
+   would show up as measured behavior rather than remain invisible.
+
+An incident-window cap (≤15% of any intent's sample from the iOS 11.1
+autocorrect-bug period, decisions #6) prevents one time-clustered event
+from dominating intent discovery or evaluation; a near-duplicate cap
+(exact-after-normalization dedupe, ≤2 rows per near-identical reply
+cluster) prevents one canned brand template from doing the same.
+
+### How rows were labeled
+
+Every candidate row was hand-checked by one annotator (the author)
+against the taxonomy definitions in `docs/taxonomy.md`, not accepted on
+the strength of any automated labeler's suggestion. Candidate pools were
+sourced differently per intent — a random LLM-relabeled pool for the four
+common intents, targeted regex pools for the two rare/rule-gated intents,
+and a keyword pool for the blind-spot sub-stratum — because a uniform
+random draw cannot surface enough examples of an intent that is under 1%
+of the corpus (decisions #17).
+
+**Hand-check yield varied sharply by intent and is itself informative.**
+Precision against the candidate pool ranged from over 90% (battery,
+billing) down to 38–42% for `general_complaint_nonactionable` — meaning
+the automated pre-labeler was wrong on roughly 3 of 5 of its own
+suggestions for that bucket, even after several rounds of correction
+(decisions #10, #13, #14). This is reported rather than smoothed over
+because it directly bears on how much to trust any pipeline metric that
+depends on automated labeling at corpus scale (§5).
+
+### Final composition
+
+| Intent | n | Share of golden set | True corpus share (est.) |
+|---|---|---|---|
+| software_feature_defect | 67 | 33.5% | ~35.3% |
+| general_complaint_nonactionable | 54 | 27.0% | ~37.1% |
+| billing_account | 20 | 10.0% | ~8.7% |
+| ios_version_downgrade | 18 | 9.0% | ~0.5% |
+| out_of_scope | 18 | 9.0% | ~5.0% |
+| battery_drain | 16 | 8.0% | ~11.3% |
+| non_english | 7 | 3.5% | ~2.2% |
+
+**Consequence for reading this report:** because two intents are
+deliberately over-sampled by roughly an order of magnitude, any single
+blended accuracy or quality number computed naively across all 200 rows
+misrepresents production-scale performance. Per-intent metrics are
+reported as primary throughout §2 and §4 for exactly this reason — this
+is not a stylistic choice, it follows directly from how the set was built.
+
 ## 4. Failure Analysis: Top 5 Failure Modes
+
 
 ### 1. Cosine similarity overstates usable grounding (retrieval)
 
