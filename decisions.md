@@ -657,3 +657,69 @@ has not yet earned its place empirically.
 **Caveat on the numbers:** 67 rows, ~10 per intent, so each per-intent figure is ±1-2
 rows of noise. Neighbour intents are qwen-labelled with the #12/#13 rules, so G3
 inherits that labeller's error rate — the same limitation as #14's confusion matrix.
+
+### 23. Retriever swapped to sentence-transformers embeddings: required hit@5 77% → 94%
+
+`scripts/retrieval_embed.py`. all-MiniLM-L6-v2 replaces TF-IDF; per-intent pools, gates
+G1-G4 and k=5 unchanged. Measured on the **full 200-row golden set** — 164 of them, since
+`ios_version_downgrade` and `out_of_scope` are policy `none` and retrieve nothing (#11,
+taxonomy §7). The TF-IDF arm was re-run on the same 200 rows so the comparison is not
+confounded by the earlier 67-row sample.
+
+**G1's threshold is not transferable between retrievers, and reusing it would have
+faked the result.** TF-IDF cosine on short tweets sits near zero for unrelated pairs, so
+TAU=0.20 was meaningful; MiniLM puts random pairs at mean 0.27-0.35, where 0.20 passes
+**everything** — G1 fails 0.0% of candidates at that threshold. TAU is therefore
+recalibrated per pool as the 95th percentile of random-pair similarity (0.508-0.591,
+"closer than 95% of arbitrary pairs"), where G1 fails 8.0%. Both are reported below; the
+calibrated figures are the real ones.
+
+| metric | TF-IDF | embeddings |
+|---|---|---|
+| **`required` hit@5** | **77%** | **94%** |
+| all-rows hit@5 | 77% | 93% |
+| G1 lexical fail | 26.7% | 8.0% |
+| G2 form fail | 0.0% | 0.0% |
+| **G3 topic fail** | **50.1%** | **29.4%** |
+| G4 template fail | 0.0% | 0.0% |
+
+Per intent, new hit@5: `software_feature_defect` 75%→96%, `battery_drain` 62%→100%,
+`general_complaint_nonactionable` 85%→91%, `billing_account` 70%→95%, `non_english`
+86%→71% (7 rows, 2 fall below calibrated TAU — noise at that n).
+
+**G3 improved by 21pp but is still 29.4%, and reporting hit@5 alone would hide what
+that costs.** Rank matters:
+
+- hit@5 (any of 5 usable) **93%**
+- **hit@1 (top-1 usable) 68%**
+- precision@5 65%, mean 3.26 of 5 candidates usable
+- G3 fails **29.3% at rank 0** — identically to all ranks, so topic mismatch is *not*
+  concentrated in the tail
+
+So a usable neighbour is nearly always present in the top 5, but the single nearest
+neighbour is topically wrong about one time in three. **Drafting from top-1 would
+ground on the wrong thread ~30% of the time.** Whatever drafting does, it must be
+handed several candidates and allowed to reject them, not the argmax.
+
+Per the agreed sequencing, no third retriever was tried. Stating the remaining options
+with their real costs rather than picking one:
+
+- **Intent-conditioned retrieval is genuinely untried and is the direct fix for G3.**
+  The per-intent pools filter on `resolution_type` only — they still contain threads of
+  every intent, which is exactly what G3 catches. Filtering a pool to same-intent
+  threads would drive G3 toward zero by construction. Cost: pool sizes collapse
+  (indicative, TF-IDF classifier: defect 7,993→~2,800, residual 2,568→~1,076,
+  battery 7,993→~447, `non_english` 1,282→~3), it needs intent labels for all ~35k pool
+  threads, and it makes retrieval depend on the *predicted* query intent — 73% accurate
+  for defect (#19) — so classifier error now compounds on both the query and the pool
+  side. `battery_drain` and `non_english` would be starved outright.
+- **Hybrid lexical+embedding** would likely help G1 more than G3, and G1 is no longer
+  the binding constraint at 8%.
+- **Document it as a limitation** and handle it at draft time by passing top-k with the
+  gate flags attached, letting the drafter decline to ground. Given hit@5 93% vs hit@1
+  68%, this extracts most of the available value without new machinery.
+
+My read: the third option first, because it is free and the measurement says the
+information is already there in the top 5. Intent-conditioning is worth trying only for
+`software_feature_defect` and `general_complaint_nonactionable`, the two intents whose
+same-intent pools stay large enough to be usable.
