@@ -143,7 +143,12 @@ Four recognisable kinds, all present in the sample:
 - **Warranty, policy and pricing questions** — answerable, but from policy, not
   from a retrieved support thread.
 - **Phishing and scam reports** — the customer is reporting, not asking.
-- **Praise and compliments** with no request attached.
+- **Praise and compliments** with no request attached. **Empirically near-zero:**
+  15 hand-checked keyword candidates yielded 0 genuine hits — every match was sarcasm
+  ("Thanks for destroying my wife's iPhone"), a polite sign-off on a real complaint,
+  or praise bundled with a request. Retained as a documented kind because it does
+  occur (one row in the n=500 design sample), but it is not built for and the golden
+  set contains none. Do not spend detector effort here without new evidence.
 - **Meta-commentary** about Twitter, the brand, or the product generally.
 
 > @BRAND has @BRAND started offering International Warranty on #iPhones? If yes, then is it applicable in India too? If yes, then can you please share official page stating the same along with T&Cs?

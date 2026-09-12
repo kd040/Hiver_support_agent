@@ -273,3 +273,165 @@ Final distribution, n=500: `software_feature_defect` 196 (39.2%),
 `ios_version_downgrade` 6 (1.2%). Taxonomy corrections end here; next step is
 golden-set sampling design, and #12's caveat still holds — these are bootstrap
 labels, the golden set gets hand-labelled.
+
+### 14. Golden-set sampling plan, and why per-intent accuracy is the headline metric
+
+200 rows drawn from the full 48,968-thread cleaned corpus (not the n=500 taxonomy
+sample, which existed for discovery). Targets: `software_feature_defect` 67,
+`general_complaint_nonactionable` 54 (42 general + 12 blind-spot), `billing_account`
+20, `battery_drain` 16, `ios_version_downgrade` 18, `out_of_scope` 18,
+`non_english` 7. Roughly proportional to the corrected n=500 mix (#13), except that
+`ios_version_downgrade` and `out_of_scope` get floors of 18 regardless of their ~1-2%
+share, because a rare intent needs enough rows to measure at all.
+
+**Blended accuracy would misrepresent production performance, so it is never the
+headline.** The floors over-sample `ios_version_downgrade` ~9x and `out_of_scope`
+~10x. A single average over golden-set rows therefore lets two intents worth ~3% of
+real traffic drive ~18% of the score. `scripts/eval_report.py` reports per-intent
+accuracy as primary, names the weakest intent, and prints two clearly-labeled
+secondary aggregates: a naive blended figure and one reweighted to estimated
+production prevalence. Its self-check pins the size of the distortion — a 20-row
+failure confined to one over-sampled rare intent costs 13.7pp of naive headline that
+it would not cost in production.
+
+The same divergence cuts the other way per intent: `ios_version_downgrade` (#11) and
+`out_of_scope` (#13) are both intents where matching Apple's historical reply is the
+wrong target, so agreement-with-history must be reported separately from correctness
+for those two rows groups.
+
+**Near-duplicate capping before any draw** (as in #7): exact-after-normalization
+dedup on `customer_text` (48,968 → 48,199) then ≤2 rows per brand-reply near-dup
+cluster (→ 32,295). The cluster cap is aggressive by design; it removed 15,904 rows.
+
+**One conflict it caused, resolved by exempting one stratum.** Apple's
+language-redirect reply is the most reliable `non_english` label source (taxonomy.md
+§6), but it is a single near-dup cluster — so the ≤2/cluster cap cut it from 1,084
+threads to **9**, nearly destroying the label source for that intent. `non_english`
+candidates are therefore drawn after exact-dedup but before the cluster cap. Safe
+here because the cap exists to stop one canned *brand reply* dominating, while these
+customers' messages are all distinct.
+
+**The #13 non_english rule does not survive contact with the full corpus.** Inside
+the 304-row residual bucket it flagged nothing and measured 18/20 recall at 0/172
+false positives. Applied to 32,295 rows it returned a pool that was **1/20 correct**
+on hand-check. Two causes: terse English tweets carry no word from the deliberately
+narrow function-word list ("mail app on crashes consistently due to new updated
+restart off on etc no use" contains none of them), and `NON_LATIN_RE` runs on raw
+text, so an Arabic *hashtag* on an English message trips it. Absence-of-English is a
+weak signal at scale. Replaced for sampling by positive evidence — the brand's
+language-redirect reply OR `label_intents.FOREIGN` — which hand-checked **20/20**.
+The rule is left in place for the residual bucket, where it is applied to few rows
+and its errors are visible; it should not be used as a corpus-scale detector.
+
+Detector precision measured against hand-check (370 candidates, 244 confirmed):
+
+| source | precision |
+|---|---|
+| `non_english` positive-evidence | 20/20 (100%) |
+| `battery_drain` (qwen) | 20/22 (91%) |
+| `billing_account` (qwen) | 22/27 (82%) |
+| `blind_spot` keyword pass | 23/30 (77%) |
+| `software_feature_defect` (qwen) | 76/109 (70%) |
+| `out_of_scope` keyword pass | 32/60 (53%) |
+| `ios_version_downgrade` regex | 27/45 (60%) |
+| `general_complaint_nonactionable` (qwen) | 24/57 (42%) |
+| `non_english` absence-of-English rule | 1/20 (5%) |
+
+**`out_of_scope`'s praise sub-kind does not exist in this corpus: 0/15.** Every
+"thanks"/"love my iPhone" match was sarcasm ("Thanks for destroying my wife's
+iPhone"), a polite sign-off on a real complaint, or praise bundled with a request.
+Genuine unsolicited praise with no ask is real but very rare — one row in the n=500.
+taxonomy.md §7 still lists it as a kind; the golden set will be composed of the other
+three (warranty, phishing, meta) unless someone hand-finds praise rows.
+
+**`general_complaint_nonactionable` is the one stratum that came back short: 24
+confirmed against a target of 42.** At 42% precision the model's residual bucket is
+mostly other intents — overwhelmingly the letter-I keyboard bug (which is
+`software_feature_defect`) and battery complaints. This is the same recall problem as
+#10 seen from the other side, and it means the corrected n=500 figure of 32.2%
+residual is itself likely an overestimate. Backfill is available without new model
+calls (745 unused residual-labeled rows in the relabeled pool), but at 42% precision
+it costs ~45 more hand-checks per 18 rows.
+
+### 15. The residual bucket was NOT inflated: precision-only reasoning was the error
+
+After #14 I reported that the corrected n=500 residual share of 32.2% was "likely an
+overestimate", reasoning from the 42% hand-check precision on qwen's residual
+predictions. **That inference was invalid and the conclusion was wrong.**
+
+Precision tells you how many rows leave a bucket. It says nothing about how many
+arrive. Rows flow both ways, and the inbound flow here is large: 23.9% of everything
+qwen labelled `software_feature_defect` is truly residual, and that label is 35.2% of
+the corpus. Estimating prevalence needs the full confusion matrix, not a diagonal.
+
+`scripts/derive_prevalence.py` builds it from the unbiased 1,800-row random pool.
+Within each predicted label the hand-checked rows are a random subsample, so they
+estimate P(true | predicted), and prevalence(k) = Σ_j share(j)·P(true=k | pred=j).
+Result, against the n=500 figures:
+
+| intent | n=500 | corrected | delta |
+|---|---|---|---|
+| `general_complaint_nonactionable` | 32.2% | **37.1%** | **+4.9pp** |
+| `software_feature_defect` | 39.2% | 35.3% | −3.9pp |
+| `battery_drain` | 9.6% | 11.3% | +1.7pp |
+| `billing_account` | 12.0% | 8.7% | −3.3pp |
+| `out_of_scope` | 1.8% | **5.0%** | **+3.2pp** |
+| `non_english` | 4.0% | 2.2% | −1.8pp |
+| `ios_version_downgrade` | 1.2% | **0.5%** | −0.7pp |
+
+So residual was *under*-stated, not inflated. The real limitation of the bootstrap
+correction is not that it is biased in one direction — it is that a labeler's error
+rate gives no directional information at all about prevalence, and every number in
+#10 through #13 derived from bucket precision inherits that.
+
+**Two consequences worth stating in the report's misleading-number section.**
+`out_of_scope` is ~5% of traffic, nearly 3x its n=500 estimate, so the bucket added in
+#13 is not the rounding error it looked like. And `ios_version_downgrade` at 0.5%
+means the golden set's 18-row floor over-samples it **18x**, not the ~9x planned —
+the strongest single argument for never headlining a blended number.
+
+`eval_report.PREVALENCE` now carries these figures. They are still bootstrap
+quality: the confusion matrix rests on one annotator (me) over 265 pool rows, and
+`out_of_scope` / `ios_version_downgrade` use precision measured on their own detector
+pools rather than on the random pool, with the miss mass assigned to residual.
+
+### 16. `non_english` is exempt from the ≤2-per-cluster near-duplicate cap (final)
+
+Flagged in #14, now settled as a deliberate rule rather than a deviation. The cap
+exists to stop one canned **brand reply** from dominating a sample. Apple's
+language-redirect template is exactly such a reply — and it is also the most reliable
+`non_english` label source in the corpus, so the cap cut that source from 1,084
+threads to 9. The customers' own messages behind those replies are all distinct, which
+is the thing the golden set actually samples, so the cap protects nothing here while
+destroying the stratum. `non_english` candidates are therefore drawn after
+exact-after-normalization dedup but before the cluster cap. The exemption is specific
+to this intent and its justification is the identical-reply/distinct-message split; it
+does not generalise to intents whose *customer messages* cluster.
+
+### 17. Golden eval set finalized at 200 rows
+
+`data/processed/golden_set.pkl` (+ `.csv`), built by `scripts/build_golden.py` from
+370 hand-checked candidates (244 confirmed, record in
+`data/processed/golden_handcheck.pkl`).
+
+| intent | n | share | bug_kw |
+|---|---|---|---|
+| `software_feature_defect` | 67 | 33.5% | 10 (15%) |
+| `general_complaint_nonactionable` | 54 | 27.0% | 2 (4%) |
+| `billing_account` | 20 | 10.0% | 0 |
+| `ios_version_downgrade` | 18 | 9.0% | 0 |
+| `out_of_scope` | 18 | 9.0% | 0 |
+| `battery_drain` | 16 | 8.0% | 0 |
+| `non_english` | 7 | 3.5% | 0 |
+
+The 54-row residual block is 42 general + 12 `blind_spot` (retail/Genius Bar logistics
+and hardware damage), carried as `sub_stratum` so the known gap stays visible instead
+of dissolving into the bucket. `out_of_scope` is 6 warranty + 6 phishing + 6 meta;
+praise contributes 0 (see taxonomy.md §7). Incident rows are 6.0% overall, 15% within
+`software_feature_defect` — at the #6 ceiling, under it everywhere else.
+
+Every row is one annotator's judgement. Before these numbers are used to make a
+claim about the agent, a second pass on a sample of them is worth the time,
+particularly for `general_complaint_nonactionable`, where the accept rate across two
+draws was 40% and the boundary against `software_feature_defect` is where nearly all
+the disagreement lives.
