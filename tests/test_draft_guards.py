@@ -60,3 +60,46 @@ def test_grounding_urls_are_stripped_before_prompting():
 def test_specificity_check_flags_claims_absent_from_grounding():
     assert unsupported_specifics("go to Settings > General > Keyboard", "this may help")
     assert unsupported_specifics("try Settings > Battery", "open Settings > Battery") == []
+
+
+# --- narration / length guard (decisions.md #30) ---
+def test_narration_guard_catches_the_observed_defect():
+    from draft_replies import draft_quality_flags
+    bad = ("Let's try to draft a reply based on the grounding material. Since the "
+           "grounding material mentions a similar issue, the steps to resolve the issue "
+           "are not provided.")
+    assert "narration" in draft_quality_flags(bad)
+    assert draft_quality_flags("Turning Low Power Mode on helps.") == []
+
+
+def test_length_guard_reports_the_length():
+    from draft_replies import draft_quality_flags
+    flags = draft_quality_flags("x" * 400)
+    assert flags == ["over_length:400"], flags
+
+
+def test_every_escalate_route_yields_a_nonempty_reason():
+    from escalate import escalation_decision
+    rows = [
+        {"route": "escalate_override", "override": "physical_or_hardware",
+         "intent": "battery_drain"},
+        {"route": "no_draft_policy", "intent": "non_english"},
+        {"route": "no_draft_policy", "intent": "out_of_scope"},
+        {"route": "no_usable_grounding", "intent": "software_feature_defect"},
+    ]
+    for r in rows:
+        action, reason = escalation_decision(r)
+        assert action == "escalate", r
+        assert reason and reason.strip(), r
+
+
+def test_auto_handle_routes_are_labelled_by_grounding_kind():
+    from escalate import escalation_decision
+    a, r = escalation_decision({"route": "policy_fact", "intent": "battery_drain"})
+    assert (a, r) == ("auto_handle", "canned_template:battery_drain")
+    a, r = escalation_decision({"route": "policy_fact", "intent": "ios_version_downgrade"})
+    assert r == "stated_policy_fact:ios_version_downgrade"
+    a, r = escalation_decision({"route": "grounded", "intent": "battery_drain",
+                                "grounded_on": "123", "grounding_rank": 1,
+                                "gated_score": 0.71})
+    assert a == "auto_handle" and "rank=1" in r and "gated_score=0.71" in r

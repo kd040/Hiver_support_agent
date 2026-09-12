@@ -955,3 +955,61 @@ per-customer wording matters.
 single assertion it can echo; prefer a template when the fact is a sequence whose order
 or polarity carries the correctness. Checking whether a prompt constraint held is not
 optional — two of the three attempts above looked reasonable and were measurably wrong.
+
+### 30. Escalation decision layer (step 5): formalization, plus one thing that isn't
+
+`scripts/escalate.py`. `escalation_decision(row)` maps each route to `auto_handle` or
+`escalate` and attaches a stated reason. No new signals: every reason label is reused
+from the check that produced it in `draft_replies.py`, so a reason can always be traced
+back to the code that fired it.
+
+| route | action | reason label |
+|---|---|---|
+| `escalate_override` | escalate | `safety_override:{physical_or_hardware\|account_or_payment_action\|phishing_or_scam}` |
+| `no_draft_policy` | escalate | the per-intent policy string (taxonomy §6 / §7) |
+| `no_usable_grounding` | escalate | `no_usable_grounding: zero of top-5 passed gates G1-G4` |
+| `policy_fact` | auto_handle | `stated_policy_fact:*` or `canned_template:*` |
+| `grounded` | auto_handle | `grounded:thread=…,rank=…,gated_score=…` |
+
+**Result over 200 rows: 154 auto_handle (77%), 46 escalate (23%). All 46 escalated rows
+carry a non-empty stated reason** (asserted in code, not just reported), and all 46 have
+`final_draft` null — an escalated row never ships customer-facing text. Reasons in use:
+`safety_override` 20, policy strings 18, `no_usable_grounding` 8.
+
+**The length/narration guard found one more defect than the length check alone.** Two of
+200 drafts narrate themselves; only one of those exceeds 280 characters. The 558-char
+monologue was already known, but a second draft narrates *within* tweet length and would
+have shipped. Both are `software_feature_defect`, both flagged not rejected, consistent
+with #26. Pinned in `tests/test_draft_guards.py`.
+
+**NOT formalization — `billing_account` is mislabelled as auto_handle, 13 rows.**
+taxonomy §4 is explicit: "This intent should escalate by policy regardless of classifier
+confidence: account and payment actions are not safe to auto-handle." Seven billing rows
+do escalate, via the account/payment override. The other 13 route `grounded` and are
+therefore labelled `auto_handle` — but reading their drafts, all 13 are in substance
+handoffs: 7 explicitly say "DM us", and the remaining 6 redirect to another channel
+("contact our iTunes Store support team"). None attempts an account action, so the
+*content* is safe; the *label* contradicts §4.
+
+This is a semantic question the routing layer cannot settle, which is why it is flagged
+rather than silently decided. Two defensible readings:
+
+- `auto_handle` = "a reply goes out with no human in the loop" → a drafted redirect is
+  auto-handled, and the current 154/46 (77/23) stands.
+- `escalate` = "a human or private channel takes over" → a drafted redirect *is* an
+  escalation that happens to be phrased as a reply, §4 is satisfied, and the split
+  becomes **141/59 (71/29)**.
+
+The second matches taxonomy §4 as written and is what I would pick, but it is a 13-row
+swing in the headline auto-handle rate, so it is the user's call. Left as-is pending
+that decision.
+
+Two smaller notes in the same family, not changed:
+
+- `out_of_scope` is 18/18 escalate, but §7 says praise takes a polite acknowledgment and
+  phishing an acknowledgment plus the report channel — so §7 arguably permits
+  auto-handling part of this intent. Current behaviour is deliberately conservative.
+- `general_complaint_nonactionable` auto-handles 45 rows by asking a diagnostic question,
+  which resolves nothing. That is correct per §5 ("auto-handling should mean 'ask one
+  good diagnostic question'"), but it means `auto_handle` must not be read as "resolved"
+  anywhere in the report — it means "replied without a human".

@@ -141,6 +141,26 @@ BANNED_ERA_TERMS = ["Battery Health", "Optimised Battery Charging",
                     "Dark Mode", "App Tracking Transparency"]
 
 
+# Narration defect: at temperature 0.2 the model occasionally explains what it is about
+# to do instead of replying. Flagged, never rejected, same principle as the specificity
+# check. Found once in 122 grounded drafts (a 558-character reasoning monologue).
+NARRATION = re.compile(
+    r"\b(let'?s (try|draft|start)|based on the grounding|the grounding (material|text)|"
+    r"i (will|would) draft|here'?s (a|the) (draft|reply)|as an ai|"
+    r"since the grounding|steps to resolve.{0,20}not provide)", re.I)
+MAX_CHARS = 280
+
+
+def draft_quality_flags(draft):
+    """Presentation defects in a draft: too long for a tweet, or narrating itself."""
+    out = []
+    if len(str(draft)) > MAX_CHARS:
+        out.append(f"over_length:{len(str(draft))}")
+    if NARRATION.search(str(draft)):
+        out.append("narration")
+    return out
+
+
 def era_violations(draft):
     return [t for t in BANNED_ERA_TERMS if t.lower() in str(draft).lower()]
 
