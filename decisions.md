@@ -435,3 +435,111 @@ claim about the agent, a second pass on a sample of them is worth the time,
 particularly for `general_complaint_nonactionable`, where the accept rate across two
 draws was 40% and the boundary against `software_feature_defect` is where nearly all
 the disagreement lives.
+
+### 18. Boundary reliability spot-check: 57.9% concordance, and the boundary is where it lives
+
+The golden set is **one annotator's judgement** (mine) on 370 candidates. That is the
+single largest limitation on every number derived from it, and it deserves a measured
+figure rather than a disclaimer.
+
+**Scope.** The 121 golden rows on the known-weak boundary — 54
+`general_complaint_nonactionable` + 67 `software_feature_defect`. A second judgment was
+produced by `scripts/second_pass.py`: qwen2.5:3b prompted with the intent definitions
+and examples transcribed from `docs/taxonomy.md`, blind to the golden label.
+
+**Why not the original prompt.** The golden labels for these strata are rows where the
+annotator *agreed* with a qwen candidate label — mismatches were rejected during
+hand-check. Re-running the `llm_relabel.py` few-shot prompt at temperature 0 would
+therefore reproduce its own earlier answer and report ~100% agreement as a pure
+artifact. Hence a different procedure: doc-derived definitions, no few-shot block, and
+none of the #12/#13 post-rules.
+
+**Result: 53.7% raw, 57.9% with the #12/#13 rules applied** (70/121). Per label, rules
+applied: `general_complaint_nonactionable` 63.0%, `software_feature_defect` 53.7%.
+
+**Disagreement does concentrate where expected — 45 of the 51 disagreements (88%) are
+residual↔defect** (16 residual→defect, 29 defect→residual). Two smaller clusters are
+worth naming: 4 residual rows were called `out_of_scope`, consistent with #15's finding
+that `out_of_scope` is ~5% of traffic and under-detected; and 1 defect→`billing_account`.
+Before the post-rules were applied, 18 rows spilled into `ios_version_downgrade` —
+the unguarded over-firing documented in #12, which is evidence the precondition earns
+its place rather than evidence about the boundary.
+
+**The worst subset is the one genuinely independent of qwen: `blind_spot` at 5/12
+(41.7%).** Those rows were sourced by keyword, not by a qwen label, so no agreement is
+baked in — and they are retail/Genius Bar and hardware-damage messages whose golden
+label is residual only because the taxonomy has nowhere else to put them
+(taxonomy.md "Still not in scope"). Low concordance there is the documented gap
+showing up as measured noise.
+
+**How to read 57.9% honestly.** It is concordance between two procedures, one of which
+is a 3B model reading definitions — a weak annotator. It does **not** establish that
+58% of the golden labels are correct; a weak second annotator drags the number down on
+its own. What it does establish is a floor on reliability and a clear location for the
+problem: the residual/defect line is not a minor edge, it is where a second procedure
+diverges from the first on roughly a third of rows. Treat the 67/54 split as
+provisional, and report `software_feature_defect` and
+`general_complaint_nonactionable` accuracy with this caveat attached.
+
+The 51 disagreements are written to `data/processed/second_pass_disagreements.csv` for
+a human second pass, which is the measurement that would actually settle it.
+
+### 19. Baselines to beat: trivial majority-class and TF-IDF + logistic regression
+
+`scripts/baselines.py`, scored by `scripts/eval_report.py` against the 200-row golden
+set. Neither uses an LLM at inference time. The classifier trains on the
+qwen-relabeled random pool with all 200 golden `tweet_id`s removed (1,655 rows), and
+golden ids are removed from the retrieval pool too — otherwise a golden message
+retrieves its own thread.
+
+**Baseline 1, trivial.** Majority intent (`software_feature_defect`, 33.5% of the
+golden set) for every row, the canned reply "we'll look into it", always escalate.
+Per-intent: 100% on `software_feature_defect`, **0% on the other six**. Naive blended
+33.5%, prevalence-reweighted 35.3%. Worth noting the majority class differs by source:
+the *training pool's* majority is `general_complaint_nonactionable`, so the same
+trivial strategy fitted on the pool instead of the eval set would score 0% on defect
+and 27% overall — the baseline is sensitive to which frame you read "majority" from.
+
+**Baseline 2, TF-IDF + logistic regression** (word 1-2 grams, sublinear tf, min_df 2,
+C=2.0), with nearest-neighbour reply retrieval over the 7,993-row deduped answer pool.
+
+| intent | n | balanced | unweighted |
+|---|---|---|---|
+| `software_feature_defect` | 67 | 73.1% | 61.2% |
+| `general_complaint_nonactionable` | 54 | 70.4% | **88.9%** |
+| `billing_account` | 20 | 75.0% | 35.0% |
+| `battery_drain` | 16 | 75.0% | 43.8% |
+| `ios_version_downgrade` | 18 | 66.7% | **0.0%** |
+| `out_of_scope` | 18 | 22.2% | **0.0%** |
+| `non_english` | 7 | 14.3% | **0.0%** |
+| naive blended | | 65.5% | 51.5% |
+| reweighted | | 68.6% | 62.5% |
+
+**`class_weight` is the whole story, and it is a per-intent-metric argument in
+miniature.** Unweighted scores its best single number on the largest intent (88.9% on
+residual) while returning **zero** on three intents — it has learned to answer
+"residual" and coast. Balanced trades 18pp of residual accuracy for non-zero coverage
+everywhere. A blended headline rewards the collapsed model on two of the three
+aggregate figures; per-intent makes the collapse visible immediately.
+
+Three results worth carrying into the report:
+
+- **The rules beat the learned model on `non_english`: 14.3% here vs ~100% for the
+  #13 positive-evidence detector.** With 6 training examples TF-IDF cannot learn a
+  language boundary. The baseline deliberately excludes the rules, so this is a
+  measure of what the rules are worth, not a defect in them.
+- **`out_of_scope` at 22.2%** on 58 training examples is the weakest learned intent,
+  consistent with #15's finding that it is ~5% of traffic and under-detected.
+- **The classifier scores about as well as the labels it trained on.** qwen's
+  hand-checked precision was 70% on defect and 47% on residual (#14), yet the
+  classifier hits 73.1% and 70.4% against hand labels. TF-IDF appears to smooth the
+  teacher's noise rather than inherit it, which is worth remembering before treating
+  noisy-teacher training as disqualifying.
+
+**Retrieval is reported descriptively, not scored — there is no reply metric yet.**
+Median cosine similarity to the retrieved neighbour is 0.288, and 7% of rows retrieve
+essentially nothing (sim < 0.20). Highest median similarity is `non_english` at 0.443,
+which is not a success: those messages match each other lexically and the pool's
+replies to them are language redirects or generic acknowledgements, so a high score
+there means the retriever has found the deflection template. Any future reply metric
+has to separate "retrieved a similar thread" from "retrieved a usable answer".
