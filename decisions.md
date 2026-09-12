@@ -543,3 +543,117 @@ which is not a success: those messages match each other lexically and the pool's
 replies to them are language redirects or generic acknowledgements, so a high score
 there means the retriever has found the deflection template. Any future reply metric
 has to separate "retrieved a similar thread" from "retrieved a usable answer".
+
+### 20. `blind_spot`'s 41.7% concordance is the taxonomy gap, not a labeling defect
+
+The 12 `blind_spot` rows scored worst in #18's reliability check (5/12). Accepted as
+correct behaviour of the measurement, not a problem with the labels.
+
+These are retail/Genius Bar logistics and hardware-damage messages. Their golden label
+is `general_complaint_nonactionable` only because the taxonomy has nowhere else to put
+them (taxonomy.md "Still not in scope") — they are not vague complaints, which is the
+bucket's actual definition. A second annotator reading the definitions will therefore
+disagree, and *should*: "I dropped my iPhone and the screen shattered" is not a
+non-actionable complaint by any reading of §5. The 41.7% is the cost of routing rows
+through a bucket they do not belong to, surfacing as measured disagreement.
+
+Consequence: the `blind_spot` sub-stratum is the empirical case for eventually giving
+these their own intent. It is deliberately carried as `sub_stratum` in the golden set
+so the disagreement stays attributable rather than diffusing into the residual number.
+Do not "fix" it by relabelling those rows; fix it by adding an intent, if the report's
+scope allows.
+
+### 21. `non_english` and `ios_version_downgrade` are rule-gated in the real pipeline, not model-decided
+
+Architecture decision, grounded in measured numbers rather than preference.
+
+`non_english`: the learned classifier scored **14.3%** on it (#19) against **~100%**
+for the positive-evidence rule (#13). Six training examples cannot teach a language
+boundary, and the unguarded LLM scored **0/14** on it (#13). Three procedures have now
+been measured on this label and the cheapest one is the only one that works.
+
+`ios_version_downgrade`: the unguarded LLM produced ~7 false positives per 10
+predictions (#12) and re-fired on 18 of 121 boundary rows when the precondition was
+removed (#18). The regex precondition is what holds it at 1.2% rather than an inflated
+2.8%.
+
+So in the pipeline both labels are decided before any model call: script-range plus
+function-word evidence for `non_english`, explicit backwards-movement language for
+`ios_version_downgrade`. The model is asked only to choose among the remaining five
+intents. This also removes both intents' routes from the LLM's failure surface
+entirely — `non_english` is always-escalate with no reply logic, and
+`ios_version_downgrade` answers from a stated policy fact rather than retrieval (#11),
+so neither needs generation at all.
+
+Cost of the decision, stated plainly: the rules are recall-limited. The `non_english`
+rule missed 2 of 20 known rows (#13) and is a poor corpus-scale detector on its
+absence-of-English half (#14) — it is used with the positive-evidence source in front
+of it. Rule misses land in the residual bucket, which is the safe direction.
+
+### 22. Retrieval metric: cosine gated by resolution-type compatibility, and the 73pp gap it exposed
+
+`scripts/retrieval_metric.py`. Cosine similarity alone counts any lexically-similar
+thread as a hit regardless of whether its reply is the right KIND of reply. Four gates,
+all of which must pass for a candidate to count as usable grounding:
+
+| gate | test |
+|---|---|
+| G1 lexical | `cos_sim >= 0.20` |
+| G2 form | retrieved `resolution_type` is acceptable for the query's intent |
+| G3 topic | retrieved thread's own intent matches the query's intent |
+| G4 template | not the language-redirect template, unless the query IS `non_english` |
+
+Combined score: `gated_score = max over top-k of (cos_sim if all gates pass else 0)`;
+`hit@k` is `gated_score > 0`. Acceptable types per intent come from taxonomy.md's
+"Good resolution" lines, and retrieval policy is **not uniform** — averaging over it is
+what hid the problem. Three groups: `required` (retrieval supplies the answer's
+content: defect, battery, residual), `escalate` (route fixed by policy, retrieval
+supplies at most redirect wording: billing, non_english), `none` (retrieval must be
+bypassed: `ios_version_downgrade` per #11, `out_of_scope` per taxonomy §7).
+
+**Measured on a 67-row stratified golden sample, k=5:**
+
+| pool | old hit@5, all | new hit@5, all | old, `required` | new, `required` |
+|---|---|---|---|---|
+| full corpus, all resolution_types | 91% | **19%** | 93% | **20%** |
+| answer-type only (#7 shape) | 90% | 25% | 90% | 57% |
+| **per-intent pools (fix)** | 85% | **77%** | 87% | **80%** |
+
+Mean raw cosine is 0.274; mean gated score is 0.020. Cosine-only was reporting
+~90% retrieval success on a pipeline that could actually ground a reply for 20% of the
+rows that need one.
+
+**The structural cause: one pool cannot serve every intent.** An intent can only
+retrieve an appropriate reply if the `resolution_type` it needs is *in* the pool.
+decisions #7's answer-type pool is right for `software_feature_defect` (**100%** hit@5,
+unchanged by gating) and fine for `battery_drain` (70%), and is structurally incapable
+of serving the rest — it scores **0%** for residual, billing and `non_english` because
+the types those intents need were filtered out when the pool was built. The corpus has
+2,642 `clarifying_question` and 1,874 `other_channel_redirect` threads; the pool
+contains none of them.
+
+Splitting into per-intent pools fixes it: residual 0% → 70%, `non_english` 0% → 86%,
+billing 0% → 60%, defect unchanged at 100%. G2 then fails 0% of the time by
+construction. **This supersedes #7's single-pool design** — #7's dedup logic and its
+≤3-per-cluster cap still stand, but the pool is built per intent from that intent's
+acceptable resolution types.
+
+**What remains broken is G3, at 54% failure even with per-intent pools.** The retrieved
+thread is often about a different problem than the query. That is the retriever's
+fault, not the pool's — TF-IDF on short tweets is weak — and it is the thing to improve
+before drafting, since a topically-wrong neighbour with the right reply shape is
+exactly the input that produces a confident wrong draft.
+
+**G4 fired zero times and two earlier claims need correcting.** I previously wrote that
+`non_english`'s high median similarity (0.443, #19) meant the retriever was finding the
+deflection template. It is not: those queries retrieve genuine same-language
+neighbours (French and Spanish messages), and their failure was the `resolution_type`,
+not the template. Relatedly, the language-redirect replies split 611
+`self_contained_answer` / 490 `other_channel_redirect`, so they are largely absent from
+the answer-type pool and G4 had nothing to catch there. The gate is kept as cheap
+insurance for the per-intent `non_english` pool, where those 490 rows now live, but it
+has not yet earned its place empirically.
+
+**Caveat on the numbers:** 67 rows, ~10 per intent, so each per-intent figure is ±1-2
+rows of noise. Neighbour intents are qwen-labelled with the #12/#13 rules, so G3
+inherits that labeller's error rate — the same limitation as #14's confusion matrix.
