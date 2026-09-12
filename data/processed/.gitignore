@@ -1,0 +1,3 @@
+# Regenerable from data/raw/ via scripts/; too large to track (35MB+).
+*.pkl
+*.jsonl
