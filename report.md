@@ -195,12 +195,11 @@ is not a stylistic choice, it follows directly from how the set was built.
 
 ### 1. Cosine similarity overstates usable grounding (retrieval)
 
-**Example:** A raw cosine-similarity retrieval metric reported 91% hit-rate
-for "found a usable grounding candidate in the top 5." Once gated by
-resolution-type compatibility and same-topic match, the real figure was
-19% corpus-wide (77% once retrieval pools were corrected to be per-intent).
-The `non_english` pool's highest median similarity (0.443) turned out to
-be near-*language* neighbors, not near-*answer* neighbors.
+**Example:** A raw cosine metric reported a 91% hit-rate for "usable
+grounding in the top 5." Gated by resolution-type and same-topic match, the
+real figure was 19% corpus-wide, 77% with per-intent pools. The
+`non_english` pool's top median similarity (0.443) tracked *language*, not
+*answers*.
 
 **Hypothesis:** Lexical/semantic proximity on short text (tweets) tracks
 topic and register far more than it tracks "this reply would actually help
@@ -212,13 +211,11 @@ groundedness.
 
 ### 2. LLMs treat procedural instructions as suggestions, not constraints
 
-**Example:** A stated policy fact for `battery_drain` explicitly specified
-"Low Power Mode: **on**." Across three escalating prompt-level constraints
-(allow-list, plain instruction, explicit named prohibition), the drafting
-model inverted this in 5 of 6 mentions — telling customers to make sure
-Low Power Mode was **off**. The same model handled a single-proposition
-fact (`ios_version_downgrade`: "not supported once signing ends") with
-zero defects.
+**Example:** A policy fact for `battery_drain` specified "Low Power Mode:
+**on**." Across three prompt constraints (allow-list, instruction, explicit
+prohibition), the model inverted it in 5 of 6 mentions, telling customers to
+set it **off**. The same model handled a single-proposition fact
+(`ios_version_downgrade`) with zero defects.
 
 **Hypothesis:** A single factual assertion competes with the model's prior
 on roughly equal footing and usually wins when explicitly stated. A
@@ -231,13 +228,11 @@ the fix vs. up to 14/14 across three prompt attempts).
 
 ### 3. The LLM-as-judge has no measurable relationship to reply quality
 
-**Example:** The judge's groundedness score averaged 4.84/5 on both the 19
-drafts a deterministic specificity check flagged as containing unsupported
-claims, and the 122 it did not — identical to two decimal places.
-Independently, judge-vs-human agreement on a 36-row hand-scored subset
-produced Cohen's kappa ≤ 0 on relevance, groundedness, and correctness
-(negative kappa means worse than chance). The judge awarded a flat 5/5 on
-correctness to every scored row; the human mean was 4.39.
+**Example:** Judge groundedness averaged 4.84/5 on both the 19 drafts a
+specificity check flagged and the 122 it did not. Judge-vs-human agreement
+on 36 hand-scored rows gave Cohen's kappa ≤ 0 on relevance, groundedness,
+and correctness (negative = worse than chance). The judge gave a flat 5/5
+correctness to every row; the human mean was 4.39.
 
 **Hypothesis:** The same model (llama3.1:8b) both drafted and judged the
 replies, with no independent check against the grounding text — a
@@ -247,13 +242,11 @@ this by removing most of the scale's discriminative range.
 
 ### 4. The taxonomy has a documented, unclosed coverage gap
 
-**Example:** Retail/hardware-logistics messages (cracked screens, water
-damage, Genius Bar appointments) have no home in the seven-intent taxonomy.
-They are filed under `general_complaint_nonactionable` "for want of
-anywhere better" (decisions #20), where the system correctly asks a
-diagnostic question — a technically-correct action per §5 that resolves
-nothing for a customer whose actual issue is physical damage requiring an
-in-person repair.
+**Example:** Retail/hardware messages (cracked screens, water damage, Genius
+Bar appointments) have no home in the seven-intent taxonomy. Filed under
+`general_complaint_nonactionable` (decisions #20), they get a diagnostic
+question — correct per §5, but resolving nothing when the issue is physical
+damage needing an in-person repair.
 
 **Hypothesis:** The taxonomy was built from clustering + hand-naming on a
 finite sample; low-frequency-but-real intents (this one estimated at
@@ -265,13 +258,12 @@ deliberately left unclosed as a documented scope decision, not an oversight.
 
 ### 5. Small-sample validation repeatedly looked correct and wasn't
 
-**Example:** Four separate times during this build, a measurement taken on
-a small sample (18–304 rows) was later contradicted at full or larger
-scale: the corrected residual-intent prevalence (32.2%→37.1%, direction
-initially mis-inferred from precision alone); non-argmax retrieval usage
-(33%→73%); the `non_english` detection rule (18/20 recall on 304 rows →
-1/20 correct at 32,295-row scale); and a battery drafting fix that passed
-design review and looked sound before failing verification at n=14.
+**Example:** Four times, a measurement on a small sample (18–304 rows) was
+contradicted at larger scale: residual-intent
+prevalence (32.2%→37.1%, direction mis-inferred from precision alone);
+non-argmax retrieval usage (33%→73%); the `non_english` rule (18/20 recall
+on 304 rows → 1/20 at 32,295-row scale); and a battery fix that looked sound
+before failing verification at n=14.
 
 **Hypothesis — and this is the most important one in the report:** each of
 these four had a *different* root cause — a reasoning error (precision
@@ -285,14 +277,13 @@ failure mode 3, generalized.
 
 ## 5. What Is Misleading About My Headline Number
 
-The single number most likely to be quoted from this project is the
-**auto-handle rate: 70.5% (141/200)**. Read on its own, it implies "the
-agent successfully handles 70% of incoming support requests." That reading
-is wrong, in a specific and measurable way.
+The number most likely to be quoted is the **auto-handle rate: 70.5%
+(141/200)**. Read alone, it implies "the agent successfully handles 70% of
+incoming support requests." That reading is wrong in a specific, measurable
+way.
 
-**`auto_handle` means "a reply was sent without a human in the loop." It
-does not mean "resolved."** Decomposing the 141 auto-handled rows by what
-actually happened:
+**`auto_handle` means "a reply was sent without a human in the loop," not
+"resolved."** Decomposing the 141 rows by what actually happened:
 
 | What auto_handle actually did | n | % of total |
 |---|---|---|
@@ -302,49 +293,41 @@ actually happened:
 | Emitted an identical canned template (battery) | 14 | 7% |
 
 At most **96 of 200 rows (48%) receive anything resembling a substantive
-answer**, and of those, 14 are the exact same templated text. The other 45
-— nearly a third of everything counted in the celebrated 70.5% — are the
-system correctly following its own taxonomy by asking a clarifying
-question, which is the right behavior for an ambiguous message, but is not
-resolution by any reasonable definition. Quoting 70.5% as a success or
-resolution rate would be the single most misleading statement this report
-could make.
+answer**, and 14 of those are the same templated text. The other 45 —
+nearly a third of the 70.5% — are the system correctly asking a clarifying
+question, the right behavior for an ambiguous message but not resolution.
+Quoting 70.5% as a success or resolution rate would be the most misleading
+statement this report could make.
 
-**This was not a one-off naming slip; it is a pattern in this project.**
-Every other headline metric produced during the build had a version of the
-same problem, each for a different underlying reason:
+**This is not a one-off naming slip but a pattern.** Every other headline
+metric had a version of the same problem, each for a different reason:
 
-- **Intent classification accuracy: 100.0%** on the strata drawn from the
-  qwen relabeler's own predictions — impossible given the same relabeler's
-  independently-measured ~70% precision, because the golden-set rows for
-  those strata were sampled *from* the relabeler's output and kept only
-  where a human agreed. The honest, non-circular figure — measured on
-  independently-sourced rows — is **70.9%**.
-- **Escalation decision accuracy: 94.0%.** This is close to a tautology:
-  the router is scored against taxonomy rules it directly implements, so
-  most of the 94% reflects "the code does what the code says," not
-  validated correctness. Only the 12 disagreements (6%) carry real
-  information, and half of those are arguably the taxonomy being wrong,
-  not the router.
-- **Retrieval hit-rate: 91%** under a cosine-similarity-only metric,
-  against **19%** once gated by whether the retrieved reply was actually
-  usable (§4, failure mode 1) — a 4.8x overstatement from a single
-  unstated assumption (similarity implies usefulness).
-- **LLM-judge reply-quality scores** (means of 4.84–5.00 across
-  dimensions) looked like strong, clean evidence of quality until checked
-  against a deterministic ground-truth signal and an independent human
-  rater, both of which showed the judge carries no real signal (§4,
-  failure mode 3).
+- **Intent classification accuracy: 100.0%** on strata drawn from the qwen
+  relabeler's own predictions — impossible given its independently-measured
+  ~70% precision, because those golden-set rows were sampled *from* the
+  relabeler's output and kept only where a human agreed. The non-circular
+  figure, on independently-sourced rows, is **70.9%**.
+- **Escalation decision accuracy: 94.0%.** Close to a tautology: the router
+  is scored against taxonomy rules it implements, so most of the 94%
+  reflects "the code does what the code says," not validated correctness.
+  Only the 12 disagreements (6%) carry information, and half are arguably
+  the taxonomy being wrong, not the router.
+- **Retrieval hit-rate: 91%** under a cosine-only metric against **19%**
+  once gated by whether the reply was usable (§4, mode 1) — a 4.8x
+  overstatement from one unstated assumption (similarity implies
+  usefulness).
+- **LLM-judge reply-quality scores** (means of 4.84–5.00) looked like clean
+  evidence of quality until checked against a deterministic ground-truth
+  signal and a human rater, both showing the judge carries no real signal
+  (§4, mode 3).
 
-**The general lesson, stated once and meant to generalize:** every number
-in this pipeline that was constructed from, filtered by, or evaluated
-against its own upstream component's output looked better than the
-number obtained once measured against an independent source — the golden
-set's independently-sourced rows, a deterministic check, or a human rater.
-The gap was not small in any instance (30 points on intent accuracy, 4.8x
-on retrieval, the entire judge dimension). **Any single metric in this
-report that is not explicitly marked as measured against an independent
-source should be treated as an upper bound, not an estimate.**
+**The general lesson:** every number constructed from, filtered by, or
+evaluated against its own upstream component's output looked better than the
+same number measured against an independent source — independently-sourced
+golden rows, a deterministic check, or a human rater. The gap was never
+small (30 points on intent accuracy, 4.8x on retrieval, the entire judge
+dimension). **Any metric here not explicitly marked as measured against an
+independent source should be treated as an upper bound, not an estimate.**
 
 ## 6. What I'd Do With One More Week
 
