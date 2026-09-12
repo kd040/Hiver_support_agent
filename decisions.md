@@ -723,3 +723,235 @@ My read: the third option first, because it is free and the measurement says the
 information is already there in the top 5. Intent-conditioning is worth trying only for
 `software_feature_defect` and `general_complaint_nonactionable`, the two intents whose
 same-intent pools stay large enough to be usable.
+
+### 24. Gate thresholds are retriever-specific and must be recalibrated, never reused
+
+Standalone finding, surfaced by #23 but general.
+
+A similarity threshold is a property of the *similarity function*, not of the task. The
+G1 lexical gate used `cos_sim >= 0.20` against TF-IDF, where unrelated short tweets
+score near zero, so 0.20 meant "meaningfully more similar than nothing". Carried over to
+MiniLM embeddings unchanged, the same number **failed 0.0% of candidates** — random
+pairs in these pools score mean 0.27-0.35, so every candidate clears 0.20 and the gate
+silently stops being a gate. Reusing it would have reported 98% required-hit@5 instead of
+the real 94%, and the inflation would have looked like a win from the retriever swap.
+
+The fix is to define the threshold in distribution terms rather than as a constant:
+TAU = the 95th percentile of **random-pair** similarity within the pool being searched,
+i.e. "closer than 95% of arbitrary pairs". Per-pool values came out 0.508-0.591 for
+MiniLM against 0.20 for TF-IDF — a 2.5-3x difference for the identical semantic
+criterion. Recalibrated, G1 fails 8.0%.
+
+Generalisation for the rest of this project: **any absolute threshold inherited across a
+component swap is a bug until re-derived.** This applies to the near-duplicate 0.95
+cosine merge in #7 (calibrated for MiniLM, would need re-deriving for a different
+encoder), and to any confidence cut-off the escalation step later introduces. Where a
+threshold cannot be avoided, prefer a distributional definition that travels.
+
+### 25. G3 topic mismatch (29.4%) accepted as a documented v1 limitation
+
+Decision: do not chase a third retriever, and do not build intent-conditioned retrieval
+in v1. Recorded as a known limitation with its measured cost, and as future work.
+
+After the embedding swap, 29.4% of retrieved candidates are about a different problem
+than the query, and the rate is identical at rank 0 (29.3%) — so it is not a tail
+effect. The consequence is specific and bounded: **hit@5 93% against hit@1 68%.** A
+usable neighbour is almost always in the top 5; the nearest one is wrong about a third
+of the time. v1 therefore hands the drafter the top 5 with gate flags rather than the
+argmax, which is free and captures most of the available headroom.
+
+**Future work, deliberately not built.** Intent-conditioned retrieval — filtering each
+pool to same-intent threads before similarity search — attacks G3 directly and would
+drive it toward zero by construction. It was not built because the costs are real and
+measured: pools collapse (defect 7,993→~2,800, residual 2,568→~1,076, battery
+7,993→~447, `non_english` 1,282→~3, so two intents are starved outright); it requires
+intent labels for all ~35k pool threads; and it makes retrieval depend on the *predicted*
+query intent at 73% accuracy (#19), compounding classifier error on both the query and
+the pool side. If revisited, it is worth trying for `software_feature_defect` and
+`general_complaint_nonactionable` only — the two intents whose same-intent pools stay
+large enough to search.
+
+Hybrid lexical+embedding retrieval was also considered and dropped: it would mainly
+improve G1, which at 8% failure is no longer the binding constraint.
+
+### 26. Drafting (step 4): gated grounding, hard safety overrides, and measured fabrication
+
+`scripts/draft_replies.py`, llama3.1:8b (generation quality matters here; qwen2.5:3b is
+the classifier, not the drafter).
+
+**Routing, in priority order.** Safety overrides are checked on the customer message
+FIRST and beat everything, including a successfully grounded retrieval:
+
+1. `escalate_override` — physical/hardware symptoms (swelling, heat, won't charge,
+   physical damage), account/payment actions, phishing/scam reports. From taxonomy.md
+   §3, §4 and §7, which state these escalate regardless of classifier confidence.
+2. `no_draft_policy` — `non_english` (§6 always-escalate, no reply logic) and
+   `out_of_scope` (§7 forbids auto-drafting from retrieval). No generation call.
+3. `policy_fact` — `ios_version_downgrade`, answered from a stated fact, the one place
+   the pipeline deliberately bypasses retrieval (#11).
+4. `grounded` — ground in the **highest gated-score** candidate of the top 5.
+5. `no_usable_grounding` — zero of top-5 pass the gates: no draft is forced, the row is
+   flagged for the escalation step (step 5, not built).
+
+**Grounding is the best gated candidate, not the argmax.** At n=200, rank 0 is used
+88/122 times (72%) and a non-argmax candidate 34/122 times (28%) — so the choice matters
+for a bit over a quarter of grounded drafts, concentrated in the harder ones. The first
+18-row sample suggested 2 of 6 (33% rank-0) and was wrong: it deliberately over-sampled
+zero-grounding rows. See #28.
+
+**Route distribution over the full 200-row golden set:** `grounded` 122 (61%),
+`policy_fact` 32 (16%: `ios_version_downgrade` 18 generated from a stated fact,
+`battery_drain` 14 emitted as a canned template), `escalate_override` 20 (10%),
+`no_draft_policy` 18 (9%), `no_usable_grounding` 8 (4%). Total abstention 48/200 (24%).
+Zero era violations, zero links, mean 100 characters.
+
+**One prompt-adherence failure survives, 1 of 122:** a 558-character draft that narrated
+its own reasoning ("Let's try to draft a reply based on the grounding material. Since
+the grounding material mentions...") rather than producing a reply. It is counted by the
+over-280 check rather than suppressed, on the same principle as the specificity flag. At
+temperature 0.2 this class of failure is rare but not zero, and a length check is the
+cheapest guard if it matters at volume.
+
+Escalate-override reasons across the 20: account/payment 7, phishing 7,
+physical/hardware 6.
+
+**Three defects found in the first 18-row sample and fixed:**
+
+- Drafts copied `t.co` shortlinks out of the grounding (1 of 7). Grounding is now
+  URL-stripped before it reaches the prompt, links are forbidden in output, and a regex
+  backstop counts any that survive. Post-fix: 0.
+- The blackened-charger-contacts row received a settings answer, violating §3's
+  hardware-safety rule. The prompt encoded each intent's *target reply* but none of the
+  *escalate-anyway* conditions. Now an override; post-fix that row escalates.
+- Drafts stated settings paths absent from their grounding (2 of 7), including
+  `Settings > Battery > Battery Health` — a path that shipped in iOS 11.3 beta and is
+  anachronistic for a corpus centred on 11.0-11.2. Right-looking, era-wrong.
+
+**Fabrication is flagged and counted, never silently rejected.** The specificity check
+compares settings paths, version numbers and feature names in the draft against its
+grounding text. Rate over the 200-row run: **19 of 122 grounded drafts (16%)**, and it
+is confined to one intent — `software_feature_defect` 19/64 (30%),
+`general_complaint_nonactionable` 0/45, `billing_account` 0/13. Residual and billing
+flag at zero because their target replies are diagnostic questions and redirects, which
+need no specifics at all. The check measures "unsupported by the grounding", not
+"wrong" — most flagged paths are real — and those are different claims. Keeping it as a
+rate rather than a filter is deliberate: the number belongs in the report.
+
+`battery_drain` originally flagged 12/14 (86%) and is now a canned template with no
+generation call, for the reasons in #29. Note that the specificity flag is **vacuous for
+templates** — the draft is its own grounding, so its 0% is an artifact, not a result.
+The real guarantee for the template is `tests/test_draft_guards.py`, which pins the two
+defects that were actually found: no post-window features, and Low Power Mode stated
+ON rather than inverted.
+
+**Unintended interaction worth recording:** stripping links did not reduce fabrication,
+it changed its shape. Previously the model answered the autocorrect question by
+parroting a shortlink; with links removed it produced `Settings > General > Keyboard`
+instead. That is a net gain in *observability* — an opaque unverifiable link became a
+concrete claim the specificity check can catch — but not a gain in groundedness. Fixes
+that remove a crutch tend to relocate the failure rather than delete it.
+
+**Near-copying is a documented characteristic, not a bug.** Mean similarity between
+draft and grounding is 0.55 (max 0.86). The system is substantially **extractive**:
+it retrieves a past Apple reply and rewrites it. That is a reasonable design for support
+replies and it is why an 8B model suffices, but it means draft quality is bounded by
+retrieval quality, and credit for good drafts belongs mostly to the retriever. No change
+made; stated so the report does not overclaim generation.
+
+### 27. Abstention losing recall is G3 evidence, not a new problem
+
+Two `no_usable_grounding` rows in the first sample should have had grounding: "fix this
+I️ glitch thing" is the iOS 11.1 keyboard bug, for which the corpus holds 4,192
+near-identical canned replies (#7), and a Files/iCloud Drive row was a well-formed
+specific defect.
+
+Recorded as **corroborating evidence for #25's G3 limitation, not a separate issue.**
+The answer demonstrably exists in the pool; the retriever failed to surface it inside
+the top 5 with a matching topic, which is exactly the 29.4% topic-mismatch rate already
+accepted as a v1 limitation. No retriever change and no gate loosening: abstaining is
+the safe failure direction, and loosening the gates to recover these rows would trade a
+measured recall loss for an unmeasured correctness loss.
+
+What this does change is how the number is reported. At n=200 the
+`no_usable_grounding` rate is 8/200 (4%), and it is **not** a clean measure of
+"questions the corpus cannot answer" — it is that plus G3 misses. Both belong in the report's misleading-number section, since quoting abstention
+as a coverage figure would overstate how much of the corpus is genuinely un-groundable.
+
+### 28. Four small-sample findings reversed at scale — a running methodological note
+
+Not a one-off. Four times now, a number that looked settled on a small sample moved
+materially, or reversed, when measured properly. Collected here because the pattern
+itself belongs in the report's misleading-number section, and because it is the best
+argument in this project for reporting n alongside every figure.
+
+| finding | small-sample reading | at scale | direction |
+|---|---|---|---|
+| residual prevalence (#15) | "32.2% is inflated", from 42% bucket precision | **37.1%** via the full confusion matrix | reversed |
+| rank-0 grounding use (#26) | 2 of 6 = 33%, on 18 rows | **99 of 136 = 73%** | 40pp |
+| battery policy fact (#29) | sound in design, every step version-checked | **10 of 14 drafts defective** | failed |
+| `non_english` absence rule (#14) | 18/20 recall, 0/172 FP on 304 rows | **1/20 correct** on 32,295 rows | collapsed |
+
+The four fail in different ways, which is the useful part:
+
+- **#15 was a reasoning error, not a sampling error.** Precision was measured correctly;
+  the inference from precision to prevalence was invalid because rows flow both ways.
+  A bigger sample would not have caught it — only the confusion matrix did.
+- **#26 was a biased sample.** The 18 rows deliberately over-sampled zero-grounding
+  cases to exercise the abstention path, which made argmax look far less useful than it
+  is. The bias was introduced on purpose and then forgotten when reading the result.
+- **#29 was a design that could not be validated by inspection.** The fact's content was
+  verified step by step and was correct; the failure was entirely in whether the model
+  would follow it, which only a run could reveal.
+- **#14 was a threshold-free rule validated on the wrong base rate.** 0 false positives
+  in 172 rows bounds the FP rate near 1%, which is fine at n=172 and catastrophic at
+  n=32,295 where it swamps a 3.6% true class.
+
+Practical rules adopted from this: quote n with every rate; never infer a distribution
+from a precision; re-measure any number when the sample it came from was stratified or
+deliberately skewed; and treat "the design is obviously right" as a hypothesis with a
+cheap test, not a conclusion.
+
+### 29. Stated facts work for propositions and fail for procedures; the fix is a template, not a stronger prompt
+
+`ios_version_downgrade` is answered from a stated fact and its drafts are clean — zero
+specificity flags, zero era violations. The same mechanism applied to `battery_drain`
+failed completely, and the difference is the *shape* of the fact: downgrade's is a single
+unambiguous proposition ("not supported once signing ends"), battery's was a four-step
+procedure. Handed a procedure, the model treated it as suggestions — it dropped steps
+(`Software Update` used 0 of 14 times), substituted a better-known step from its own
+prior, and **inverted a polarity**: of 6 drafts mentioning Low Power Mode, 5 advised
+turning it **off**, which is the opposite of the guidance and actively worsens battery
+life.
+
+Three escalating prompt-level constraints were tried and measured:
+
+| attempt | flag rate | `Battery Health` occurrences |
+|---|---|---|
+| retrieval grounding (links stripped) | 12/14 (86%) | 11 |
+| + stated policy fact listing allowed steps | **14/14 (100%)** | 12 |
+| + explicit named prohibition of the term | 12/14 (86%) | 10 |
+| **canned template, no generation** | **0/14** | **0** |
+
+The allow-list made it *worse*. The explicit prohibition — naming "Battery Health" and
+forbidding it outright — reduced occurrences from 12 to 10 and never reached zero. A
+strong model prior ("battery question → Battery Health") survived every instruction
+placed against it.
+
+This is #21's lesson in a second place: where the model cannot be trusted on a specific
+decision, the reliable fix is deterministic, not a better prompt. `battery_drain` now
+emits a fixed, version-checked template with no generation call, justified by the
+taxonomy itself — §3's good resolution is standard settings guidance that does not vary
+by customer, which is a template by definition.
+
+**The cost, stated plainly.** Battery replies are now identical for every customer, so
+they cannot acknowledge a specific symptom, and the retrieval work for this intent
+(100% gated hit@5) is discarded. Two of the 14 rows previously had clean grounded
+drafts. Physical-symptom rows still escalate ahead of the template via the #26
+overrides, which is what protects the safety case. A hybrid — template as the spine plus
+retrieved grounding for tone — was not tried, and is the obvious next thing if
+per-customer wording matters.
+
+**Generalisation worth carrying:** prefer stating facts to the model when the fact is a
+single assertion it can echo; prefer a template when the fact is a sequence whose order
+or polarity carries the correctness. Checking whether a prompt constraint held is not
+optional — two of the three attempts above looked reasonable and were measurably wrong.
